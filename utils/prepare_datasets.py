@@ -106,50 +106,44 @@ def prepare_mols_helper(modeldeepchem,lm,tokenizer,df_mols,mol_type="nonStereoSM
     
     #inference on molecules
     df_mols_embeddings_original, df_mols_layers_original=embed(lm,df_mols[mol_type], tokenizer, batch_size=64)
-    
-        
     df_mols_embeddings=postproce_molembeddings(df_mols_embeddings_original,df_mols[index])
 
-    
-    
-    df_mols_embeddings_diskdataset = dc.data.DiskDataset.from_numpy(df_mols_embeddings['Combined'].values.tolist())
-    df_mols_embeddings_linear=modeldeepchem.predict_embedding(df_mols_embeddings_diskdataset)
-    df_mols_embeddings_linear_torch=[torch.from_numpy(x.reshape(1,-1)) for x in df_mols_embeddings_linear]
-    df_mols_embeddings_linear=postproce_molembeddings(df_mols_embeddings_linear_torch,df_mols[index])
-    
-    
      #z-score embeddings
-    df_mols_embeddings_zscored = df_mols_embeddings.copy()
-    scaled_features = StandardScaler().fit_transform(df_mols_embeddings_zscored.loc[:, '0':'767'].values.tolist())
-    df_mols_embeddings_zscored.loc[:, '0':'767'] = pd.DataFrame(scaled_features, index=df_mols_embeddings_zscored.index, columns=[str(i) for i in range(768)])
-    df_mols_embeddings_zscored['Combined'] = df_mols_embeddings_zscored.loc[:, '0':'767'].values.tolist()
-    
-    
-    
+    df_mols_embeddings_zscored = zscore_embeddings(df_mols_embeddings,dim=768)
+
+    #linear transformation of embeddings
+    df_mols_embeddings_linear = linear_transformation_embeddings(df_mols, df_mols_embeddings, index, modeldeepchem)
+
     #z-score linear embeddings
-    df_mols_embeddings_linear_zscored = df_mols_embeddings_linear.copy()
-    scaled_features = StandardScaler().fit_transform(df_mols_embeddings_linear_zscored.loc[:, '0':'255'].values.tolist())
-    df_mols_embeddings_linear_zscored.loc[:, '0':'255'] = pd.DataFrame(scaled_features, index=df_mols_embeddings_linear_zscored.index, columns=[str(i) for i in range(256)])
-    df_mols_embeddings_linear_zscored['Combined'] = df_mols_embeddings_linear_zscored.loc[:, '0':'255'].values.tolist()
+    df_mols_embeddings_linear_zscored = zscore_embeddings(df_mols_embeddings_linear,dim=256)
 
-
-    
     for df_mols_layer in df_mols_layers_original:
         df_mols_layer=postproce_molembeddings(df_mols_layer,df_mols[index])
         df_mols_layers.append(df_mols_layer)
-        # print("step2")
         
          #z-score embeddings
-        df_mols_embeddings_zscored = df_mols_layer.copy()
-        scaled_features = StandardScaler().fit_transform(df_mols_embeddings_zscored.loc[:, '0':'767'].values.tolist())
-        df_mols_embeddings_zscored.loc[:, '0':'767'] = pd.DataFrame(scaled_features, index=df_mols_embeddings_zscored.index, columns=[str(i) for i in range(768)])
-        df_mols_embeddings_zscored['Combined'] = df_mols_embeddings_zscored.loc[:, '0':'767'].values.tolist()
+        df_mols_embeddings_zscored = zscore_embeddings(df_mols_layer)
         df_mols_layers_zscored.append(df_mols_embeddings_zscored)
         
     
     return df_mols_embeddings_original,df_mols_layers_original,df_mols_embeddings,df_mols_embeddings_zscored,df_mols_layers,df_mols_layers_zscored,df_mols_embeddings_linear,df_mols_embeddings_linear_zscored
 
 
+def linear_transformation_embeddings(df_mols, df_mols_embeddings, index, modeldeepchem):
+    df_mols_embeddings_diskdataset = dc.data.DiskDataset.from_numpy(df_mols_embeddings['Combined'].values.tolist())
+    df_mols_embeddings_linear = modeldeepchem.predict_embedding(df_mols_embeddings_diskdataset)
+    df_mols_embeddings_linear_torch = [torch.from_numpy(x.reshape(1, -1)) for x in df_mols_embeddings_linear]
+    df_mols_embeddings_linear = postproce_molembeddings(df_mols_embeddings_linear_torch, df_mols[index])
+    return df_mols_embeddings_linear
+
+
+def zscore_embeddings(df_mols_embeddings,dim=768):
+    df_mols_embeddings_zscored = df_mols_embeddings.copy()
+    scaled_features = StandardScaler().fit_transform(df_mols_embeddings_zscored.loc[:, '0':str(dim-1)].values.tolist())
+    df_mols_embeddings_zscored.loc[:, '0':str(dim-1)] = pd.DataFrame(scaled_features, index=df_mols_embeddings_zscored.index,
+                                                                columns=[str(i) for i in range(dim)])
+    df_mols_embeddings_zscored['Combined'] = df_mols_embeddings_zscored.loc[:, '0':str(dim-1)].values.tolist()
+    return df_mols_embeddings_zscored
 
 
 def prepare_mols_helper_mixture(modeldeepchem,df_mols_embeddings_original,df_mols,mol_type="nonStereoSMILES",index="CID",last='255'):
@@ -392,43 +386,6 @@ def prepare_ravia_backup():
 
 
 
-def prepare_ravia(base_path='/local_storage/datasets/farzaneh/alignment_olfaction_datasets/'):
-    #generate docstrings for this function with a brief description of the function and the parameters and return values
-    """
-    Prepare the ravia dataset for the alignment task
-    :param base_path:   (str) path to the base directory where the datasets are stored
-    :return:         (tuple) a tuple containing the original ravia dataset, the mean ravia dataset, and the pivoted mean ravia dataset
-    """
-
-
-    input_file = base_path + 'curated_datasets/mols_datasets/curated_ravia2020_behavior_similairity.csv'
-    df_ravia_original=pd.read_csv(input_file)
-    df_ravia=df_ravia_original.copy()
-
-    features= ['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES', 'RatedSimilarity']
-    agg_functions={}
-    features_all = features
-    df_ravia=df_ravia.reindex(columns=features_all)
-        
-    agg_functions['RatedSimilarity'] = 'mean'
-    
-    df_ravia = df_ravia[ features_all]
-    df_ravia_copy = df_ravia.copy()
-    df_ravia_copy = df_ravia_copy.rename(columns={'Stimulus 1-IsomericSMILES': 'Stimulus 2-IsomericSMILES', 'Stimulus 2-IsomericSMILES': 'Stimulus 1-IsomericSMILES', 'CID Stimulus 1': 'CID Stimulus 2', 'CID Stimulus 2': 'CID Stimulus 1','Stimulus 1-nonStereoSMILES': 'Stimulus 2-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES': 'Stimulus 1-nonStereoSMILES'})
-    df_ravia_copy['RatedSimilarity']=np.nan
-    df_ravia_concatenated= pd.concat([df_ravia, df_ravia_copy], ignore_index=True, axis=0).reset_index(drop=True)
-    df_ravia=df_ravia_concatenated.drop_duplicates(['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES'])
-
-    
-    df_ravia_mean =df_ravia.groupby(['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES']).agg(agg_functions).reset_index()
-
-    df_ravia_mean_pivoted = df_ravia_mean.pivot(index='CID Stimulus 1', columns='CID Stimulus 2', values='RatedSimilarity')
-
-    df_ravia_mean_pivoted = df_ravia_mean_pivoted.reindex(sorted(df_ravia_mean_pivoted.columns), axis=1)
-    df_ravia_mean_pivoted=df_ravia_mean_pivoted.sort_index(ascending=True)
-    
-    
-    return  df_ravia_original,df_ravia_mean,df_ravia_mean_pivoted
 
 
 def prepare_ravia_or_snitz(dataset,base_path='/local_storage/datasets/farzaneh/alignment_olfaction_datasets/'):
@@ -523,12 +480,6 @@ def prepare_ravia_sep():
     
     return  df_ravia_original,df_ravia_mean,df_ravia_mean_pivoted
 
-
-def prepare_dataset(ds):
-    ds['y'] = ds['y'].apply(ast.literal_eval)
-    ds['embeddings'] = ds['embeddings'].apply(ast.literal_eval)
-    return ds
-
 def prepare_ravia_similarity_mols2(df_ravia_similarity_mean,modeldeepchem_gslf,lm,tokenizer):
     df_ravia_mean_mols1 = df_ravia_similarity_mean[['Stimulus 1-IsomericSMILES','Stimulus 1-nonStereoSMILES','CID Stimulus 1']].drop_duplicates().reset_index(drop=True)
     df_ravia_mean_mols2 = df_ravia_similarity_mean[['Stimulus 2-IsomericSMILES','Stimulus 2-nonStereoSMILES','CID Stimulus 2']].drop_duplicates().reset_index(drop=True).rename(columns={'Stimulus 2-nonStereoSMILES': 'Stimulus 1-nonStereoSMILES','Stimulus 2-IsomericSMILES':'Stimulus 1-IsomericSMILES', 'CID Stimulus 2': 'CID Stimulus 1' })
@@ -536,10 +487,7 @@ def prepare_ravia_similarity_mols2(df_ravia_similarity_mean,modeldeepchem_gslf,l
     df_ravia_mols=df_ravia_mols.drop_duplicates().reset_index(drop=True)
     df_ravia_mols = df_ravia_mols.rename(columns={'Stimulus 1-IsomericSMILES': 'IsomericSMILES','Stimulus 1-nonStereoSMILES':'nonStereoSMILES', 'CID Stimulus 1': 'CID' })
     mol_type="nonStereoSMILES"
-    # df_ravia_mols.to_csv('df_ravia_mols.csv')  
 
-
-    df_mols_embeddings_original, df_mols_layers_original=embed(lm,df_ravia_mols[mol_type], tokenizer, batch_size=64)
 
     df_ravia_mols_embeddings_original,df_ravia_mols_layers_original,df_ravia_mols_embeddings,df_ravia_mols_embeddings_zscored,df_ravia_mols_layers,df_ravia_mols_layers_zscored,df_ravia_mols_embeddings_linear,df_ravia_mols_embeddings_linear_zscored=prepare_mols_helper(modeldeepchem_gslf,lm,tokenizer,df_ravia_mols)
     
@@ -634,61 +582,6 @@ def prepare_ravia_similarity_mols(df_ravia_similarity_mean,modeldeepchem_gslf,lm
     df_ravia_mols_embeddings_original,df_ravia_mols_layers_original,df_ravia_mols_embeddings ,df_ravia_mols_embeddings_zscored,df_ravia_mols_layers,df_ravia_mols_layers_zscored,df_ravia_mols_embeddings_linear,df_ravia_mols_embeddings_linear_zscored=prepare_mols_helper(df_mols_embeddings_original,df_mols_layers_original,df_ravia_mols)
     
     return df_ravia_mols,df_ravia_mols_embeddings_original,df_ravia_mols_layers_original,df_ravia_mols_embeddings,df_ravia_mols_embeddings_zscored,df_ravia_mols_layers,df_ravia_mols_layers_zscored,df_ravia_mols_embeddings_linear,df_ravia_mols_embeddings_linear_zscored
-
-    
-    # return df_ravia_mols
-
-
-
-
-def prepare_snitz(base_path='/local_storage/datasets/farzaneh/alignment_olfaction_datasets/'):
-    #generate docstrings for this function with a brief description of the function and the parameters and return values
-    """
-    Prepare the snitz dataset for the alignment task
-    :param base_path:   (str) path to the base directory where the datasets are stored
-    :return:         (tuple) a tuple containing the original snitz dataset, the mean snitz dataset, and the pivoted mean snitz dataset
-    """
-    # input_file = '/local_storage/datasets/farzaneh/openpom/data/curated_datasets/curated_snitz2013.csv'
-    input_file = base_path+'curated_datasets/mols_datasets/curated_snitz2013.csv'
-
-    df_snitz_original=pd.read_csv(input_file, low_memory=False)
-    df_snitz =df_snitz_original.copy()
-    features= ['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES', 'Similarity']
-    agg_functions={}
-
-    features_all = features
-    
-    df_snitz=df_snitz.reindex(columns=features_all)
-        
-    agg_functions['Similarity'] = 'mean'
-    # print(agg_functions,"agg_functions")
-    # print(features_all)
-    
-    
-    df_snitz = df_snitz[ features_all]
-
-    
-    
-    df_snitz_copy = df_snitz.copy()
-    df_snitz_copy = df_snitz_copy.rename(columns={'Stimulus 1-IsomericSMILES': 'Stimulus 2-IsomericSMILES', 'Stimulus 2-IsomericSMILES': 'Stimulus 1-IsomericSMILES', 'CID Stimulus 1': 'CID Stimulus 2', 'CID Stimulus 2': 'CID Stimulus 1','Stimulus 1-nonStereoSMILES': 'Stimulus 2-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES': 'Stimulus 1-nonStereoSMILES'})
-    df_snitz_copy['RatedSimilarity']=np.nan
-    df_snitz_concatenated= pd.concat([df_snitz, df_snitz_copy], ignore_index=True, axis=0).reset_index(drop=True)
-    df_snitz=df_snitz_concatenated.drop_duplicates(['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES'])
-
-    
-    df_snitz_mean =df_snitz.groupby(['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES']).agg(agg_functions).reset_index()
-    # df_ravia_mean=df_ravia_mean.drop(columns=['Stimulus 1', 'Stimulus 2'])
-    
-    df_snitz_mean_pivoted = df_snitz_mean.pivot(index='CID Stimulus 1', columns='CID Stimulus 2', values='Similarity')
-    df_snitz_mean_pivoted = df_snitz_mean_pivoted.reindex(sorted(df_snitz_mean_pivoted.columns), axis=1)
-    df_snitz_mean_pivoted=df_snitz_mean_pivoted.sort_index(ascending=True)
-    
-    
-    
-    return df_snitz, df_snitz_mean,df_snitz_mean_pivoted
-
-
-
 
 def prepare_snitz_backup():
     # input_file = '/local_storage/datasets/farzaneh/openpom/data/curated_datasets/curated_snitz2013.csv'

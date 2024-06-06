@@ -1,8 +1,8 @@
 from torch import nn
 import torch.nn.functional as F
 from deepchem.models.torch_models.torch_model import TorchModel
-from openpom.utils.loss import CustomMultiLabelLoss,CustomMultiLabelBCEWitLogitsLoss
-from openpom.utils.optimizer import get_optimizer
+# from openpom.utils.loss import CustomMultiLabelLoss,CustomMultiLabelBCEWitLogitsLoss
+# from openpom.utils.optimizer import get_optimizer
 from deepchem.models.losses import Loss, L2Loss
 
 import torch
