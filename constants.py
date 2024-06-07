@@ -20,3 +20,26 @@ gs_lf_tasks = [
 'tea', 'terpenic', 'tobacco', 'tomato', 'tropical', 'vanilla', 'vegetable',
 'vetiver', 'violet', 'warm', 'waxy', 'weedy', 'winey', 'woody'
 ]
+
+
+chemical_features_r=["nCIR",
+                     "ZM1",
+                     "GNar",
+                     "S1K",
+                     "piPC08",
+                     "MATS1v",
+                     "MATS7v",
+                     "GATS1v",
+                     "Eig05_AEA(bo)",
+                     "SM02_AEA(bo)",
+                     "SM03_AEA(dm)",
+                     "SM10_AEA(dm)",
+                     "SM13_AEA(dm)",
+                      "SpMin3_Bh(v)",
+                     "RDF035v",
+                     "G1m",
+                     "G1v",
+                     "G1e",
+                     "G3s",
+                     "R8u+",
+                     "nRCOSR"]

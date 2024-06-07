@@ -434,6 +434,37 @@ def prepare_ravia_or_snitz(dataset,base_path='/local_storage/datasets/farzaneh/a
 
     return df_ravia_original, df_ravia_mean, df_ravia_mean_pivoted
 
+def extract_set_idxs(base_path, indices_path):
+    input_file_indices = base_path + indices_path  # or new downloaded file path
+    indices = pd.read_csv(input_file_indices)
+    indices_train = indices.loc[indices['split'] == 'train']['main_idx'].values.tolist()
+    indices_valid = indices.loc[indices['split'] == 'valid']['main_idx'].values.tolist()
+    indices_test = indices.loc[indices['split'] == 'test']['main_idx'].values.tolist()
+    return indices_train, indices_valid, indices_test
+
+def extract_set_from_indices(base_path, ds_path,x_att,y_att, indices_train, indices_valid, indices_test):
+    input_file_pom = base_path + ds_path
+    gs_lf_pom = pd.read_csv(input_file_pom)
+    gs_lf_pom = prepare_dataset(gs_lf_pom, x_att, y_att)
+
+    gs_lf_pom_np = np.asarray(gs_lf_pom[x_att].tolist())
+    gs_lf_pom_y = np.asarray(gs_lf_pom[y_att].tolist())
+
+    gs_lf_pom_proba_train = gs_lf_pom_np[indices_train]
+    gs_lf_pom_y_train = gs_lf_pom_y[indices_train]
+
+    gs_lf_pom_proba_test = gs_lf_pom_np[indices_test]
+    gs_lf_pom_y_test = gs_lf_pom_y[indices_test]
+
+    gs_lf_pom_proba_valid = gs_lf_pom_np[indices_valid]
+    gs_lf_pom_y_valid = gs_lf_pom_y[indices_valid]
+
+    return gs_lf_pom, gs_lf_pom_np,gs_lf_pom_y,gs_lf_pom_proba_train,gs_lf_pom_y_train,gs_lf_pom_proba_valid,gs_lf_pom_y_valid,gs_lf_pom_proba_test,gs_lf_pom_y_test
+
+def prepare_dataset(ds,x_att,y_att):
+    ds[y_att] = ds[y_att].apply(ast.literal_eval)
+    ds[x_att] = ds[x_att].apply(ast.literal_eval)
+    return ds
 
 def prepare_ravia_sep():
 
