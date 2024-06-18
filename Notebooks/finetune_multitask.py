@@ -1,17 +1,23 @@
+import sys
+parent_dir = "/Midgard/home/farzantn/phd/Olfaction/MoLFormer_N2024"
+sys.path.append(parent_dir)
+parent_dir="/Midgard/home/farzantn/mambaforge/envs/MolTran_CUDA11_cuda/lib/python3.8"
+sys.path.append(parent_dir)
+print(sys.path)
 import time
 import torch
 import torch.nn.functional as F
 from torch import nn
-import args
+from custom_utils import args_finetune as args
 import os
 import numpy as np
 import random
 from pytorch_lightning.loggers import TensorBoardLogger
 import pytorch_lightning as pl
 from pytorch_lightning.utilities import rank_zero_warn, rank_zero_only, seed
-from tokenizer.tokenizer import MolTranBertTokenizer
+from custom_utils.tokenizer.tokenizer import MolTranBertTokenizer
 from fast_transformers.masking import LengthMask as LM
-from rotate_attention.rotate_builder import RotateEncoderBuilder as rotate_builder
+from custom_utils.rotate_attention.rotate_builder import RotateEncoderBuilder as rotate_builder
 from fast_transformers.feature_maps import GeneralizedRandomFeatures
 from functools import partial
 from apex import optimizers
@@ -27,6 +33,7 @@ from rdkit import Chem
 #from pytorch_lightning.plugins.ddp_plugin import DDPPlugin
 #from pytorch_lightning.plugins.sharded_plugin import DDPShardedPlugin
 from constants import gs_lf_tasks
+from utils.prepare_datasets import extract_set_idxs, extract_set_from_indices_df
 def normalize_smiles(smi, canonical, isomeric):
     try:
         normalized = Chem.MolToSmiles(
@@ -367,7 +374,7 @@ class MultitaskModel(pl.LightningModule):
 
         print("Validation: Current Epoch", self.current_epoch)
         append_to_file(
-            os.path.join(self.hparams.results_dir, "results_" + self.hparams.dataset_name+ "_"+ os.environ["LSB_JOBID"]+".csv"),
+            os.path.join(self.hparams.results_dir, "results_" + self.hparams.dataset_name+".csv"),
             #os.path.join(self.hparams.results_dir, "results_" + self.hparams.dataset_name+ ".csv"),
             f"{self.hparams.dataset_name}, {self.current_epoch},"
             + f"{tensorboard_logs[self.hparams.dataset_name + '_valid_loss']},"
@@ -393,8 +400,8 @@ class MultitaskModel(pl.LightningModule):
 
 
 #todo adapt this for our datasets.
-def get_dataset(data_root, filename,  dataset_len,  measure_names):
-    df = pd.read_csv(os.path.join(data_root, filename))
+def get_dataset(df,  dataset_len,  measure_names):
+
     print("Length of dataset:", len(df))
     if dataset_len:
         df = df.head(dataset_len)
@@ -405,22 +412,25 @@ def get_dataset(data_root, filename,  dataset_len,  measure_names):
 class MultitaskEmbeddingDataset(torch.utils.data.Dataset):
     def __init__(self, df,  measure_names):
         self.measure_names = measure_names
-        df['canonical_smiles'] = df['smiles'].apply(lambda smi: normalize_smiles(smi, canonical=True, isomeric=False))
-        df_good = df.dropna(subset=['canonical_smiles'])  # TODO - Check why some rows are na
+        # df['canonical_smiles'] = df['smiles'].apply(lambda smi: normalize_smiles(smi, canonical=True, isomeric=False))
+        # df_good = df.dropna(subset=['canonical_smiles'])  # TODO - Check why some rows are na
 
-        len_new = len(df_good)
-        print('Dropped {} invalid smiles'.format(len(df) - len_new))
-        self.df = df_good
+        # len_new = len(df)
+        # print('Dropped {} invalid smiles'.format(len(df) - len_new))
+        self.df = df
+
 
         self.df = self.df.reset_index(drop=True)
+        # print("kkk", self.df, "kkkk")
+
 
     def __getitem__(self, index):
-
-        canonical_smiles = self.df.loc[index, 'canonical_smiles']
+        # print(self.df['CID'].values.tolist())
+        nonStereoSMILES = self.df.loc[index, 'nonStereoSMILES']
         measures = self.df.loc[index, self.measure_names].to_numpy()
         mask = [0.0 if np.isnan(x) else 1.0 for x in measures]
         measures = [0.0 if np.isnan(x) else x for x in measures]
-        return canonical_smiles, measures, mask
+        return nonStereoSMILES, measures, mask
 
     def __len__(self):
         return len(self.df)
@@ -432,53 +442,52 @@ class PropertyPredictionDataModule(pl.LightningDataModule):
             hparams = Namespace(**hparams)
         self.hparams = hparams
         self.smiles_emb_size = hparams.n_embd
-        self.tokenizer = MolTranBertTokenizer('bert_vocab.txt')
+        # print("ssss",os.getcwd())
+        self.tokenizer = MolTranBertTokenizer('../custom_utils/tokenizer/bert_vocab.txt')
         self.dataset_name = hparams.dataset_name
+        self.dataset_index = hparams.dataset_index
+        self.base_path = hparams.base_path
+        self.data_root = hparams.data_root
+        self.input_file_indices = hparams.input_file_indices
+        self.input_file_data = hparams.input_file_data
 
     def get_split_dataset_filename(dataset_name, split):
         return split + ".csv"
 
     def prepare_data(self):
         print("Inside prepare_dataset")
-        train_filename = PropertyPredictionDataModule.get_split_dataset_filename(
-            self.dataset_name, "train"
-        )
-
-        valid_filename = PropertyPredictionDataModule.get_split_dataset_filename(
-            self.dataset_name, "valid"
-        )
-
-        test_filename = PropertyPredictionDataModule.get_split_dataset_filename(
-            self.dataset_name, "test"
-        )
+        input_file_indices = self.input_file_indices + str(self.dataset_index) + '.csv'
+        # input_file_data  = self.input_file_data+str(self.dataset_index)+'_Apr17.csv'
+        input_file_data =  self.data_root +'/'+ self.dataset_name + '.csv'
+        indices_train, indices_valid, indices_test = extract_set_idxs(self.base_path, indices_path=input_file_indices)
+        train_df,valid_df,test_df = extract_set_from_indices_df(self.base_path, input_file_data, indices_train, indices_valid, indices_test)
 
         train_ds = get_dataset(
-            self.hparams.data_root,
-            train_filename,
+            train_df,
             self.hparams.train_dataset_length,
             measure_names=self.hparams.measure_names,
         )
+        # print("SSSS", train_ds[0], "SSSS")
 
         val_ds = get_dataset(
-            self.hparams.data_root,
-            valid_filename,
+            valid_df,
             self.hparams.eval_dataset_length,
             measure_names=self.hparams.measure_names,
         )
 
         test_ds = get_dataset(
-            self.hparams.data_root,
-            test_filename,
+            test_df,
             self.hparams.eval_dataset_length,
             measure_names=self.hparams.measure_names,
         )
 
         self.train_ds = train_ds
+        self.test_ds = test_ds
         self.val_ds = [val_ds] + [test_ds]
-
-        # print(
-        #     f"Train dataset size: {len(self.train_ds)}, val: {len(self.val_ds1), len(self.val_ds2)}, test: {len(self.test_ds)}"
-        # )
+        # self.val_ds = val_ds
+        print(
+            f"Train dataset size: {len(self.train_ds)}, val: {len(self.val_ds)}, test: {len(self.test_ds)}"
+        )
 
     def collate(self, batch):
         tokens = self.tokenizer.batch_encode_plus([ smile[0] for smile in batch], padding=True, add_special_tokens=True)
@@ -554,12 +563,17 @@ def append_to_file(filename, line):
         f.write(line + "\n")
 
 def main():
+
+
     margs = args.parse_args()
     print("Using " + str(
         torch.cuda.device_count()) + " GPUs---------------------------------------------------------------------")
     pos_emb_type = 'rot'
-    if margs.dataset_name =='gs-lf':
+    if margs.dataset_name =='curated_GS_LF_merged_4983':
         margs.measure_names =  gs_lf_tasks
+    elif margs.dataset_name =='tox21':
+        margs.measure_names =  ['NR-AR', 'NR-AR-LBD', 'NR-AhR', 'NR-Aromatase', 'NR-ER', 'NR-ER-LBD',
+                                'NR-PPAR-gamma', 'SR-ARE', 'SR-ATAD5', 'SR-HSE', 'SR-MMP', 'SR-p53']
 
 
 
@@ -593,7 +607,7 @@ def main():
     margs.run_name = run_name
 
     checkpoints_folder = margs.checkpoints_folder
-    checkpoint_root = os.path.join(checkpoints_folder, margs.dataset_name)
+    checkpoint_root = os.path.join(checkpoints_folder, margs.dataset_name,str(margs.dataset_index))
     margs.checkpoint_root = checkpoint_root
     os.makedirs(checkpoints_folder, exist_ok=True)
     checkpoint_dir = os.path.join(checkpoint_root, "models_"+jobid)
@@ -615,7 +629,7 @@ def main():
         default_hp_metric=False,
     )
 
-    tokenizer = MolTranBertTokenizer('bert_vocab.txt')
+    tokenizer = MolTranBertTokenizer('../custom_utils/tokenizer/bert_vocab.txt')
     seed.seed_everything(margs.seed)
 
     if margs.seed_path == '':
