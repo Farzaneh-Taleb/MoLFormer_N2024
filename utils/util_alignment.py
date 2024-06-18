@@ -540,26 +540,23 @@ def add_chemical_features(df):
 #     return df_mols_embeddings_original,df_mols_layers_original,df_mols_embeddings,df_mols_embeddings_zscored,df_mols_layers,df_mols_layers_zscored,df_mols_embeddings_linear,df_mols_embeddings_linear_zscored
 
 
-def cosine_sim_helper(df_mols_embeddings,df_mols_embeddings_zscored,df_mols_layers,df_mols_layers_zscored,df_mols_embeddings_linear,df_mols_embeddings_linear_zscored):
-    
+def cosine_sim_helper(df_mols_embeddings,df_mols_embeddings_zscored,df_mols_layers,df_mols_layers_zscored):
+
     cosine_sim_df_mols_embeddings=cosine_similarity_df(df_mols_embeddings,'Combined')
     cosine_sim_df_mols_embeddings_zscored=cosine_similarity_df(df_mols_embeddings_zscored,'Combined')
-    
-    
-    cosine_sim_df_mols_embeddings_linear=cosine_similarity_df(df_mols_embeddings_linear,'Combined')
-    cosine_sim_df_mols_embeddings_linear_zscored=cosine_similarity_df(df_mols_embeddings_linear_zscored,'Combined')
-    
+
+
     ### Cosine similarity for all layers
     cosine_sim_df_mols_layers = []
     cosine_sim_df_mols_layers_zscored = []
     # embedding = molecules_activations_embeddings_original[0]
     for embeddings in df_mols_layers:
         cosine_sim_df_mols_layers.append(cosine_similarity_df(embeddings,'Combined'))
-        
+
     for embeddings in df_mols_layers_zscored:
         cosine_sim_df_mols_layers_zscored.append(cosine_similarity_df(embeddings,'Combined'))
-        
-    return cosine_sim_df_mols_embeddings, cosine_sim_df_mols_embeddings_zscored, cosine_sim_df_mols_layers, cosine_sim_df_mols_layers_zscored,cosine_sim_df_mols_embeddings_linear,cosine_sim_df_mols_embeddings_linear_zscored
+
+    return cosine_sim_df_mols_embeddings, cosine_sim_df_mols_embeddings_zscored, cosine_sim_df_mols_layers, cosine_sim_df_mols_layers_zscored
 
 
 def cosine_sim_helper_mixture(df_mols_embeddings,df_mols_embeddings_zscored):
