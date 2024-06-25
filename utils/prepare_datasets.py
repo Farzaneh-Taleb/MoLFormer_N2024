@@ -148,7 +148,7 @@ def zscore_embeddings(df_mols_embeddings,dim=768):
     return df_mols_embeddings_zscored
 
 
-def prepare_mols_helper_mixture(df_mols_embeddings_original,df_mols,mol_type="nonStereoSMILES",index="CID",last='255',modeldeepchem=None):
+def prepare_mols_helper_mixture(df_mols_embeddings_original,df_mols,start,end,mol_type="nonStereoSMILES",index="CID",modeldeepchem=None):
     df_mols_layers=[]
     df_mols_layers_zscored=[]
     
@@ -156,6 +156,7 @@ def prepare_mols_helper_mixture(df_mols_embeddings_original,df_mols,mol_type="no
     
         
     df_mols_embeddings=postproce_molembeddings(df_mols_embeddings_original,df_mols[index])
+    print("columns", df_mols_embeddings.columns.values.tolist())
 
     
     
@@ -167,9 +168,9 @@ def prepare_mols_helper_mixture(df_mols_embeddings_original,df_mols,mol_type="no
     
      #z-score embeddings
     df_mols_embeddings_zscored = df_mols_embeddings.copy()
-    scaled_features = StandardScaler().fit_transform(df_mols_embeddings_zscored.loc[:, '0':last].values.tolist())
-    df_mols_embeddings_zscored.loc[:, '0':last] = pd.DataFrame(scaled_features, index=df_mols_embeddings_zscored.index, columns=[str(i) for i in range(int(last)+1)])
-    df_mols_embeddings_zscored['Combined'] = df_mols_embeddings_zscored.loc[:, '0':last].values.tolist()
+    scaled_features = StandardScaler().fit_transform(df_mols_embeddings_zscored.loc[:, start:end].values.tolist())
+    df_mols_embeddings_zscored.loc[:, start:end] = pd.DataFrame(scaled_features, index=df_mols_embeddings_zscored.index, columns=[str(i) for i in range(int(end)+1)])
+    df_mols_embeddings_zscored['Combined'] = df_mols_embeddings_zscored.loc[:, start:end].values.tolist()
     
     
     
@@ -537,8 +538,8 @@ def prepare_ravia_similarity_mols_mix_on_smiles(df_ravia_similarity_mean, lm, to
 
     res=prepare_mols_helper(lm,tokenizer,df_ravia_mols,modeldeepchem=modeldeepchem_gslf)
 
-    df_ravia_mols_embeddings_original,df_ravia_mols_layers_original,df_ravia_mols_embeddings,df_ravia_mols_embeddings_zscored,df_ravia_mols_layers,df_ravia_mols_layers_zscored=res
-    return df_ravia_mols,df_ravia_mols_embeddings_original,df_ravia_mols_layers_original,df_ravia_mols_embeddings,df_ravia_mols_embeddings_zscored,df_ravia_mols_layers,df_ravia_mols_layers_zscored
+    df_mols_embeddings_original,df_mols_layers_original,df_mols_embeddings,df_mols_embeddings_zscored,df_mols_layers,df_mols_layers_zscored=res
+    return df_ravia_mols,df_mols_embeddings_original,df_mols_embeddings,df_mols_embeddings_zscored
 
 def sum_embeddings(cid_list, df_embeddings):
     embedding_sum = np.zeros(len(df_embeddings.iloc[0]['embeddings']))
@@ -566,7 +567,7 @@ def extract_embeddings(cid, df_embeddings):
 
 
 
-def prepare_ravia_similarity_mols_mix_on_representations(input_file_embeddings, df_ravia_similarity_mean, modeldeepchem_gslf=None,mixing_type='sum'):
+def prepare_ravia_similarity_mols_mix_on_representations(input_file_embeddings, df_ravia_similarity_mean, modeldeepchem_gslf=None,mixing_type='sum',sep=';',start='0',end='255'):
     df_ravia_mols = create_pairs(df_ravia_similarity_mean)
 
     df_embeddigs = pd.read_csv(input_file_embeddings)[['embeddings','CID']]
@@ -574,13 +575,13 @@ def prepare_ravia_similarity_mols_mix_on_representations(input_file_embeddings, 
 
     if mixing_type == 'sum':
 
-        df_ravia_mols['Stimulus Embedding Sum'] = df_ravia_mols['CID'].apply(lambda x: sum_embeddings(list(map(int, x.split(';'))), df_embeddigs))
+        df_ravia_mols['Stimulus Embedding Sum'] = df_ravia_mols['CID'].apply(lambda x: sum_embeddings(list(map(int, x.split(sep))), df_embeddigs))
     elif mixing_type == 'average':
-        df_ravia_mols['Stimulus Embedding Sum'] = df_ravia_mols['CID'].apply(lambda x: average_embeddings(list(map(int, x.split(';'))), df_embeddigs))
+        df_ravia_mols['Stimulus Embedding Sum'] = df_ravia_mols['CID'].apply(lambda x: average_embeddings(list(map(int, x.split(sep))), df_embeddigs))
 
     df_mols_embeddings_original =[torch.from_numpy(np.asarray(df_ravia_mols['Stimulus Embedding Sum'].values.tolist()))]
 
-    df_ravia_mols_embeddings_original,df_ravia_mols_embeddings,df_ravia_mols_embeddings_zscored=prepare_mols_helper_mixture(df_mols_embeddings_original,df_ravia_mols, modeldeepchem_gslf)
+    df_ravia_mols_embeddings_original,df_ravia_mols_embeddings,df_ravia_mols_embeddings_zscored=prepare_mols_helper_mixture(df_mols_embeddings_original,df_ravia_mols, start,end, modeldeepchem_gslf)
     
     return df_ravia_mols,df_ravia_mols_embeddings_original,df_ravia_mols_embeddings,df_ravia_mols_embeddings_zscored
 
@@ -852,11 +853,10 @@ def prepare_snitz_mols(df_snitz_mean,modeldeepchem_gslf,lm,tokenizer):
     
     df_snitz_mols_embeddings_original,df_snitz_mols_layers_original,\
     df_snitz_mols_embeddings,df_snitz_mols_embeddings_zscored,df_snitz_mols_layers,\
-    df_snitz_mols_layers_zscored,df_snitz_mols_embeddings_linear,\
-    df_snitz_mols_embeddings_linear_zscored=prepare_mols_helper(lm,tokenizer,df_snitz_mols,modeldeepchem=modeldeepchem_gslf)
+    df_snitz_mols_layers_zscored=prepare_mols_helper(lm,tokenizer,df_snitz_mols,modeldeepchem=modeldeepchem_gslf)
         
     
-    return df_snitz_mols,df_snitz_mols_embeddings_original,df_snitz_mols_layers_original,df_snitz_mols_embeddings,df_snitz_mols_embeddings_zscored,df_snitz_mols_layers,df_snitz_mols_layers_zscored,df_snitz_mols_embeddings_linear,df_snitz_mols_embeddings_linear_zscored
+    return df_snitz_mols,df_snitz_mols_embeddings_original,df_snitz_mols_layers_original,df_snitz_mols_embeddings,df_snitz_mols_embeddings_zscored,df_snitz_mols_layers,df_snitz_mols_layers_zscored
 
 def select_features(input_file):
     ds_alva = pd.read_csv(input_file)
@@ -896,51 +896,20 @@ def select_features(input_file):
     ds_alva_selected['embeddings'] = ds_alva_selected[selected_features].values.tolist()
     return ds_alva_selected
 
-def prepare_mols_other(input_file_embeddings, df_mean,modeldeepchem_gslf):
-    df_mean_mols1 = df_mean[['Stimulus 1-IsomericSMILES','Stimulus 1-nonStereoSMILES','CID Stimulus 1']].drop_duplicates().reset_index(drop=True)
-    df_mean_mols2 = df_mean[['Stimulus 2-IsomericSMILES','Stimulus 2-nonStereoSMILES','CID Stimulus 2']].drop_duplicates().reset_index(drop=True).rename(columns={'Stimulus 2-nonStereoSMILES': 'Stimulus 1-nonStereoSMILES','Stimulus 2-IsomericSMILES':'Stimulus 1-IsomericSMILES', 'CID Stimulus 2': 'CID Stimulus 1' })
-    df_mols= pd.concat([df_mean_mols1, df_mean_mols2], ignore_index=True, axis=0).reset_index(drop=True)
-    df_mols = df_mols.rename(columns={'Stimulus 1-IsomericSMILES': 'IsomericSMILES','Stimulus 1-nonStereoSMILES':'nonStereoSMILES', 'CID Stimulus 1': 'CID' })
+# def prepare_mols_other(input_file_embeddings, df_mean,modeldeepchem_gslf):
+#     df_mols = create_pairs(df_mean)
+#
+#     df_embeddigs = pd.read_csv(input_file_embeddings)[['embeddings','CID']]
+#     df_embeddigs['embeddings'] = df_embeddigs['embeddings'].apply(lambda x: np.array(eval(x)))
+#
+#
+#     df_mols['Stimulus Embedding Sum'] = df_mols['CID'].apply(lambda x: sum_embeddings(list(map(int, x.split(','))), df_embeddigs))
+#     df_mols_embeddings_original =[torch.from_numpy(np.asarray(df_mols['Stimulus Embedding Sum'].values.tolist()))]
+#
+#     df_mols_embeddings_original,df_mols_embeddings,df_mols_embeddings_zscored=prepare_mols_helper_mixture(df_mols_embeddings_original,df_mols)
+#
+#     return df_mols,df_mols_embeddings_original,df_mols_embeddings,df_mols_embeddings_zscored
 
-    df_mols=df_mols.drop_duplicates().reset_index(drop=True)
-    # df_snitz_mols.to_csv('df_snitz_mols.csv')  
-    mol_type="nonStereoSMILES"
-    
-    df_embeddigs = pd.read_csv(input_file_embeddings)[['embeddings','CID']]
-    # df_embeddigs['embeddings'] = df_embeddigs['embeddings'].apply(ast.literal_eval)
-    # df_mols_embeddings_original =[torch.from_numpy(np.asarray(df_embeddigs['embeddings'].values.tolist()))]
-
-
-
-
-    df_embeddigs['embeddings'] = df_embeddigs['embeddings'].apply(lambda x: np.array(eval(x)))
-
-
-    df_mols['Stimulus Embedding Sum'] = df_mols['CID'].apply(lambda x: sum_embeddings(list(map(int, x.split(','))), df_embeddigs))
-    df_mols_embeddings_original =[torch.from_numpy(np.asarray(df_mols['Stimulus Embedding Sum'].values.tolist()))]
-
-
-    # df_ravia_mols.to_csv('df_ravia_mols.csv')  
-
-    
-    
-    # df_embeddigs['embeddings'] = df_embeddigs['embeddings'].apply(lambda x: np.array(eval(x)))
-
-
-    # df_mols['Stimulus Embedding'] = df_mols['CID'].apply(lambda x: extract_embeddings(map(int, x)), df_embeddigs)
-    # df_mols_embeddings_original =[torch.from_numpy(np.asarray(df_mols['Stimulus Embedding'].values.tolist()))]
-
-
-    # df_ravia_mols.to_csv('df_ravia_mols.csv')  
-
-
-    # df_mols_embeddings_original, df_mols_layers_original=embed(lm,df_ravia_mols[mol_type], tokenizer, batch_size=64)
-
-    df_mols_embeddings_original,df_mols_embeddings,df_mols_embeddings_zscored=prepare_mols_helper_mixture(df_mols_embeddings_original,df_mols)
-    # df_mols_embeddings_original =[torch.from_numpy(np.asarray(df_mols_embeddings_original['embeddings'].values.tolist()))]
-    
-    return df_mols,df_mols_embeddings_original,df_mols_embeddings,df_mols_embeddings_zscored
-    # df_mols,df_mols_embeddings_original,df_mols_embeddings,df_mols_embeddings_zscored
 
 
 def prepare_mols_DAM(input_file_embeddings, df_mean,modeldeepchem_gslf,sep=';'):
@@ -967,7 +936,7 @@ def prepare_mols_DAM(input_file_embeddings, df_mean,modeldeepchem_gslf,sep=';'):
 
     # df_mols_embeddings_original, df_mols_layers_original=embed(lm,df_ravia_mols[mol_type], tokenizer, batch_size=64)
 
-    df_mols_embeddings_original,df_mols_embeddings,df_mols_embeddings_zscored=prepare_mols_helper_mixture(modeldeepchem_gslf,df_mols_embeddings_original,df_mols,last='20')
+    df_mols_embeddings_original,df_mols_embeddings,df_mols_embeddings_zscored=prepare_mols_helper_mixture(modeldeepchem_gslf,df_mols_embeddings_original,df_mols,end='20')
     
     return df_mols,df_mols_embeddings_original,df_mols_embeddings,df_mols_embeddings_zscored
         
@@ -984,8 +953,8 @@ def prepare_goodscentleffignwell_mols(modeldeepchem_gslf,lm,tokenizer):
     df_goodscentleffignwell=pd.read_csv(goodscentleffignwell_input_file)
     df_goodscentleffignwell.index.names = ['CID']
     # return df
-    df_goodscentleffignwell_mols_layers=[]
-    df_goodscentleffignwell_mols_layers_zscored=[]
+    # df_goodscentleffignwell_mols_layers=[]
+    # df_goodscentleffignwell_mols_layers_zscored=[]
     
     # input_file = '/local_storage/datasets/farzaneh/openpom/data/curated_datasets/curated_GS_LF_merged_4983.csv' # or new downloaded file path
     df_goodscentleffignwell= df_goodscentleffignwell.reset_index()
@@ -993,9 +962,10 @@ def prepare_goodscentleffignwell_mols(modeldeepchem_gslf,lm,tokenizer):
     df_goodscentleffignwell['y'] = df_goodscentleffignwell.loc[:,'alcoholic':'woody'].values.tolist()
     
 #      #inference on molecules
-    df_gslf_mols_embeddings_original,df_gslf_mols_layers_original,df_gslf_mols_embeddings,df_gslf_mols_embeddings_zscored,df_gslf_mols_layers,df_gslf_mols_layers_zscored,df_gslf_mols_embeddings_linear,df_gslf_mols_embeddings_linear_zscored=prepare_mols_helper(lm,tokenizer,df_goodscentleffignwell,modeldeepchem=modeldeepchem_gslf)
+
+    df_gslf_mols_embeddings_original,df_gslf_mols_layers_original,df_gslf_mols_embeddings,df_gslf_mols_embeddings_zscored,df_gslf_mols_layers,df_gslf_mols_layers_zscored=prepare_mols_helper(lm,tokenizer,df_goodscentleffignwell,modeldeepchem=modeldeepchem_gslf)
 #     df_snitz_mols_embeddings_original,df_snitz_mols_layers_original,df_snitz_mols_embeddings,df_snitz_mols_embeddings_zscored,df_snitz_mols_layers,df_snitz_mols_layers_zscored=prepare_mols_helper(df_snitz_mols)
-    return df_goodscentleffignwell, df_gslf_mols_embeddings_original,df_gslf_mols_layers_original,df_gslf_mols_embeddings,df_gslf_mols_embeddings_zscored,df_gslf_mols_layers,df_gslf_mols_layers_zscored,df_gslf_mols_embeddings_linear,df_gslf_mols_embeddings_linear_zscored
+    return df_goodscentleffignwell, df_gslf_mols_embeddings_original,df_gslf_mols_layers_original,df_gslf_mols_embeddings,df_gslf_mols_embeddings_zscored,df_gslf_mols_layers,df_gslf_mols_layers_zscored
 
 
     
