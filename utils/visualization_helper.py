@@ -1,8 +1,10 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-
-
+from matplotlib.patches import Patch
+from scipy.stats import gaussian_kde
+import numpy as np
+from sklearn.decomposition import PCA
 def pom_frame(pom_embeds, y, dir, required_desc, title, size1, size2, size3):
     sns.set_style("ticks")
     sns.despine()

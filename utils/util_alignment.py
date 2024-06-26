@@ -540,10 +540,10 @@ def add_chemical_features(df):
 #     return df_mols_embeddings_original,df_mols_layers_original,df_mols_embeddings,df_mols_embeddings_zscored,df_mols_layers,df_mols_layers_zscored,df_mols_embeddings_linear,df_mols_embeddings_linear_zscored
 
 
-def cosine_sim_helper(df_mols_embeddings,df_mols_embeddings_zscored,df_mols_layers,df_mols_layers_zscored):
+def cosine_sim_helper_layers(df_mols_embeddings, df_mols_embeddings_zscored, df_mols_layers, df_mols_layers_zscored):
 
-    cosine_sim_df_mols_embeddings=cosine_similarity_df(df_mols_embeddings,'Combined')
-    cosine_sim_df_mols_embeddings_zscored=cosine_similarity_df(df_mols_embeddings_zscored,'Combined')
+    # cosine_sim_df_mols_embeddings=cosine_similarity_df(df_mols_embeddings,'Combined')
+    # cosine_sim_df_mols_embeddings_zscored=cosine_similarity_df(df_mols_embeddings_zscored,'Combined')
 
 
     ### Cosine similarity for all layers
@@ -556,29 +556,19 @@ def cosine_sim_helper(df_mols_embeddings,df_mols_embeddings_zscored,df_mols_laye
     for embeddings in df_mols_layers_zscored:
         cosine_sim_df_mols_layers_zscored.append(cosine_similarity_df(embeddings,'Combined'))
 
-    return cosine_sim_df_mols_embeddings, cosine_sim_df_mols_embeddings_zscored, cosine_sim_df_mols_layers, cosine_sim_df_mols_layers_zscored
+    return  cosine_sim_df_mols_layers, cosine_sim_df_mols_layers_zscored
 
 
-def cosine_sim_helper_mixture(df_mols_embeddings,df_mols_embeddings_zscored):
+def cosine_sim_helper(df_mols_embeddings, df_mols_embeddings_zscored):
     
     cosine_sim_df_mols_embeddings=cosine_similarity_df(df_mols_embeddings,'Combined')
     cosine_sim_df_mols_embeddings_zscored=cosine_similarity_df(df_mols_embeddings_zscored,'Combined')
-    
-    
-    
-        
     return cosine_sim_df_mols_embeddings, cosine_sim_df_mols_embeddings_zscored
     
-def correlation_helper(df_all,df_mols_all,cosine_sim_df_mols_layers_zscored,equalize_size=True,value_type="r"):
+def correlation_helper_layers(df_all,cosine_sim_df_mols_layers_zscored,equalize_size=True,value_type="r"):
     layers=[]
     layers_pvalue=[]
-    data_flattered=flattening_data_helper(df_all,df_mols_all,equalize_size=True)
-    
-    
-    if value_type=="R2":
-        last=r2_score(data_flattered["Peceptual Similarity"], data_flattered["Model Similarity"])
-    else:       
-        last=pearsonr(data_flattered["Peceptual Similarity"], data_flattered["Model Similarity"])
+
     for i in range(len(cosine_sim_df_mols_layers_zscored)):
         out_mols=cosine_sim_df_mols_layers_zscored[i]
         data_flattered=flattening_data_helper(df_all,out_mols,equalize_size=True)
@@ -590,12 +580,12 @@ def correlation_helper(df_all,df_mols_all,cosine_sim_df_mols_layers_zscored,equa
             layers.append(result.statistic)
             layers_pvalue.append(result.pvalue)
     if value_type=="R2":
-        return last,_, layers,_
+        return layers
     else:    
-        return last.statistic,last.pvalue, layers,layers_pvalue
+        return layers,layers_pvalue
 
 
-def correlation_helper_mixture(df_all,df_mols_all,equalize_size=True,value_type="r"):
+def correlation_helper_mixture(df_all,df_mols_all,value_type="r"):
     # layers=[]
     # layers_pvalue=[]
     data_flattered=flattening_data_helper(df_all,df_mols_all,equalize_size=True)
@@ -606,7 +596,7 @@ def correlation_helper_mixture(df_all,df_mols_all,equalize_size=True,value_type=
     else:       
         last=pearsonr(data_flattered["Peceptual Similarity"], data_flattered["Model Similarity"])
     if value_type=="R2":
-        return last,_, layers,_
+        return last
     else:    
         return last.statistic,last.pvalue
 
@@ -624,78 +614,7 @@ def flattening_data_helper(out_original,out_mols,equalize_size=True):
     return data
 
 
-def pom_frame(pom_embeds, y, dir,required_desc,title,size1,size2,size3 ):
-    sns.set_style("ticks")
-    sns.despine()
 
-    # pom_embeds = model.predict_embedding(dataset)
-    # y_preds = model.predict(dataset)
-    # required_desc = list(dataset.tasks)
-    type1 = {'floral': '#F3F1F7', 'subs': {'muguet': '#FAD7E6', 'lavender': '#8883BE', 'jasmin': '#BD81B7'}}
-    type2 = {'meaty': '#F5EBE8', 'subs': {'savory': '#FBB360', 'beefy': '#7B382A', 'roasted': '#F7A69E'}}
-    type3 = {'ethereal': '#F2F6EC', 'subs': {'cognac': '#BCE2D2', 'fermented': '#79944F', 'alcoholic': '#C2DA8F'}}
-        
-    # Assuming you have your features in the 'features' array
-    pca = PCA(n_components=2, iterated_power=10)  # You can choose the number of components you want (e.g., 2 for 2D visualization)
-    reduced_features = pca.fit_transform(pom_embeds) # try different variations
-
-    variance_explained = pca.explained_variance_ratio_
-
-    # Variance explained by PC1 and PC2
-    variance_pc1 = variance_explained[0]
-    variance_pc2 = variance_explained[1]
-
-    # if is_preds:
-    #     y = np.where(y_preds>threshold, 1.0, 0.0) # try quartile range (or rank)
-    # else:
-    #     y = dataset.y
-
-    # Generate grid points to evaluate the KDE on (try kernel convolution)
-    x_grid, y_grid = np.meshgrid(np.linspace(reduced_features[:, 0].min(), reduced_features[:, 0].max(), 500),
-                                 np.linspace(reduced_features[:, 1].min(), reduced_features[:, 1].max(), 500))
-    grid_points = np.vstack([x_grid.ravel(), y_grid.ravel()])
-    def get_kde_values(label):
-        plot_idx = required_desc.index(label)
-        # print(y[:, plot_idx])
-        label_indices = np.where(y[:, plot_idx] == 1)[0]
-        kde_label = gaussian_kde(reduced_features[label_indices].T)
-        kde_values_label = kde_label(grid_points)
-        kde_values_label = kde_values_label.reshape(x_grid.shape)
-        return kde_values_label
-    
-    def plot_contours(type_dictionary, bbox_to_anchor):
-        main_label = list(type_dictionary.keys())[0]
-        plt.contourf(x_grid, y_grid, get_kde_values(main_label), levels=1, colors=['#00000000',type_dictionary[main_label],type_dictionary[main_label]])
-        axes = plt.gca() #Getting the current axis
-
-        axes.spines['top'].set_visible(False)
-        axes.spines['right'].set_visible(False)
-        legend_elements = []
-        for label, color in type_dictionary['subs'].items():
-            plt.contour(x_grid, y_grid, get_kde_values(label), levels=1, colors=color, linewidths=2)
-            legend_elements.append(Patch(facecolor=color, label=label))
-        legend = plt.legend(handles=legend_elements, title=main_label, bbox_to_anchor=bbox_to_anchor)
-        legend.get_frame().set_facecolor(type_dictionary[main_label])
-        plt.gca().add_artist(legend)
-
-    fig=plt.figure(figsize=(15, 15),dpi=700)
-    # ax.spines[['right', 'top']].set_visible(False)
-    # plt.title('KDE Density Estimation with Contours in Reduced Space')
-    # plt.xlabel(f'Principal Component 1 ({round(variance_pc1*100, ndigits=2)}%)')
-    # plt.ylabel(f'Principal Component 2 ({round(variance_pc2*100, ndigits=2)}%)')
-    plt.xlabel('Principal Component 1',fontsize=35)
-    plt.ylabel('Principal Component 2',fontsize=35)
-    plot_contours(type_dictionary=type1, bbox_to_anchor = size1)
-    plot_contours(type_dictionary=type2, bbox_to_anchor = size2)
-    plot_contours(type_dictionary=type3, bbox_to_anchor = size3)
-    # plt.colorbar(label='Density')
-    # plt.show()
-    # png_file = os.path.join(dir, 'pom_frame.png')
-    # plt.savefig(png_file)
-    plt.savefig("figs/realign_islands"+title+".svg")
-    plt.savefig("figs/realign_islands"+title+".pdf")
-    plt.show()
-    plt.close()
 
 
 
@@ -768,293 +687,235 @@ def plot_lines(data,title,filename):
                )
 
 
-def plot_bars(data,title,filename):
-
-    df_corrs=pd.DataFrame.from_dict(data, orient='index',
-                           columns=['Dataset','type', 'Correlation'])
-    sns.set_style("white")
-    fig, ax = plt.subplots(figsize=(10, 9)
-                           # ,constrained_layout = True
-                          )
-    # sns.set_style("whitegrid")
-    # sns.color_palette("tab10")
-    sns.color_palette("hls", 4)
-    palette=[ "#91bfdb",
-                "#003f5c",
-                 # "#d73027",
-                 # "#fc8d59",
-                 # "#ffda33",
-                
-                # , "#4575b4"
-    ]
-    
-    palette=['#4d79a4','#ecc947','#b07aa0']
-    
-    # plt.subplots_adjust(bottom=0.3)
-    g=sns.barplot(df_corrs, x="Dataset", y="Correlation", hue= "type",width=0.4,palette=palette)
-    # for i in ax.containers:
-    #     ax.bar_label(i,fmt="%2.2f")
-    ax.legend().set_title(title)
-    handles, labels = ax.get_legend_handles_labels()
-    ax.get_legend().remove()
-    fig.subplots_adjust(bottom=0.35,left=0.2)
-    fig.legend(handles, labels, ncol=1, columnspacing=1, prop={'size': 25}, handlelength=1.5, loc="lower center",
-               borderpad=0.4,
-               
-               bbox_to_anchor=(0.54, 0.), 
-               
-               frameon=True, labelspacing=0.4,handletextpad=0.2)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    
-    # g.set_yticks([0.45,0.5,0.55,0.6,0.65,0.7]) # <--- set the ticks first
-    # g.set_yticklabels(['', '','', '','', ''])
-    
-    ax.set_ylabel('Correlation Coefficient')
-    
-    # plt.margins(x=0.5)
-    # fig.update_layout(bargap=0.1)
-    # ax.set_subtitle("Dataset")  # Set title with numeric distance
-    # axes[0].set_title("Total Bill Distribution", loc=(0.05, 0.9))  # Set title with numeric distance
-    
-    # ax.set_title('')
-    ax.xaxis.set_label_coords(0.5, -0.13)
-    # plt.tight_layout()
-#     g.set_yticks([0.45,0.5,0.55,0.6,0.65,0.7]) # <--- set the ticks first
-    
-#     g.set_yticklabels(['', '0.5','', '0.6','', '0.7'])
-#     g.set_ylim(0.45,0.7)
-    
-    plt.savefig(filename, 
-                # bbox_inches="tight"
-               )
-
-
-
-def extract_embedding_molformer(lm,tokenizer,Tasks,input_file,smiles_field):
-    
-    featurizer = dc.feat.DummyFeaturizer()
-    
-    randomstratifiedsplitter = dc.splits.RandomStratifiedSplitter()
-    loader = dc.data.CSVLoader(tasks=Tasks,
-                       feature_field=smiles_field,
-                       featurizer=featurizer
-                              )
-    dataset = loader.create_dataset(inputs=[input_file])
-    n_tasks = len(dataset.tasks)
-    train_dataset, test_dataset, valid_dataset = randomstratifiedsplitter.train_valid_test_split(dataset, frac_train = 0.8, frac_valid = 0.1, frac_test = 0.1, seed = 1)
-    train_embeddings_original, train_activations_embeddings_original=embed(lm, train_dataset.X, tokenizer, batch_size=64)
-    test_embeddings_original, test_activations_embeddings_original=embed(lm, test_dataset.X, tokenizer, batch_size=64)
-    valid_embeddings_original, valid_activations_embeddings_original=embed(lm, valid_dataset.X, tokenizer, batch_size=64)
-    embeddings_original, activations_embeddings_original=embed(lm, dataset.X, tokenizer, batch_size=64)
-
-
-
-    
-
-
-    
-    
-    embedding_train_dataset,embedding_train_dataset_zscored=convert_embeddings(train_embeddings_original,train_dataset.y)    
-    embedding_test_dataset,embedding_test_dataset_zscored=convert_embeddings(test_embeddings_original,test_dataset.y)
-    embedding_valid_dataset,embedding_valid_dataset_zscored=convert_embeddings(valid_embeddings_original,valid_dataset.y)
-    embedding_dataset,embedding_dataset_zscored=convert_embeddings(embeddings_original,dataset.y)
-
-
-    train_layers=[]
-    train_layers_zscored=[]
-    test_layers=[]
-    test_layers_zscored=[]
-    valid_layers=[]
-    valid_layers_zscored=[]
-    dataset_layers=[]
-    dataset_layers_zscored=[]
-
-    for df_mols_layer in train_activations_embeddings_original:
-        embedding_train_dataset_layer ,embedding_train_dataset_zscored_layer= convert_embeddings(df_mols_layer,train_dataset.y)
-        train_layers.append(embedding_train_dataset_layer)
-        train_layers_zscored.append(embedding_train_dataset_zscored_layer)
-
-    for df_mols_layer in test_activations_embeddings_original:
-        embedding_test_dataset_layer,embedding_test_dataset_zscored_layer =convert_embeddings(df_mols_layer,test_dataset.y)
-        test_layers.append(embedding_test_dataset_layer)
-        test_layers_zscored.append(embedding_test_dataset_zscored_layer)
-
-    for df_mols_layer in valid_activations_embeddings_original:
-        embedding_valid_dataset_layer,embedding_valid_dataset_zscored_layer=convert_embeddings(df_mols_layer,valid_dataset.y)
-        valid_layers.append(embedding_valid_dataset_layer)
-        valid_layers_zscored.append(embedding_valid_dataset_zscored_layer)
-
-    for df_mols_layer in activations_embeddings_original:
-        embedding_dataset_layer,embedding_dataset_zscored_layer=convert_embeddings(df_mols_layer,dataset.y)
-        dataset_layers.append(embedding_dataset_layer)
-        dataset_layers_zscored.append(embedding_dataset_zscored_layer)
-
-    
-    
-    return dataset, embedding_train_dataset,embedding_test_dataset,embedding_valid_dataset,embedding_dataset,train_layers,test_layers,valid_layers,dataset_layers,\
-    embedding_train_dataset_zscored,embedding_test_dataset_zscored,embedding_valid_dataset_zscored,embedding_dataset_zscored,train_layers_zscored,test_layers_zscored,valid_layers_zscored,dataset_layers_zscored
-
-
-
-
-
-
-
-def extract_embedding_molformer_fromfile(lm,tokenizer,Tasks,input_file,smiles_field):
-    
-    featurizer = dc.feat.DummyFeaturizer()
-    
-    randomstratifiedsplitter = dc.splits.RandomStratifiedSplitter()
-    loader = dc.data.CSVLoader(tasks=Tasks,
-                       feature_field=smiles_field,
-                       featurizer=featurizer
-                              )
-    dataset = loader.create_dataset(inputs=[input_file])
-    n_tasks = len(dataset.tasks)
-    train_dataset, test_dataset, valid_dataset = randomstratifiedsplitter.train_valid_test_split(dataset, frac_train = 0.8, frac_valid = 0.1, frac_test = 0.1, seed = 1)
-    train_embeddings_original, train_activations_embeddings_original=embed(lm, train_dataset.X, tokenizer, batch_size=64)
-    test_embeddings_original, test_activations_embeddings_original=embed(lm, test_dataset.X, tokenizer, batch_size=64)
-    valid_embeddings_original, valid_activations_embeddings_original=embed(lm, valid_dataset.X, tokenizer, batch_size=64)
-    embeddings_original, activations_embeddings_original=embed(lm, dataset.X, tokenizer, batch_size=64)
-
-
-
-    
-
-
-    
-    
-    embedding_train_dataset,embedding_train_dataset_zscored=convert_embeddings(train_embeddings_original,train_dataset.y)    
-    embedding_test_dataset,embedding_test_dataset_zscored=convert_embeddings(test_embeddings_original,test_dataset.y)
-    embedding_valid_dataset,embedding_valid_dataset_zscored=convert_embeddings(valid_embeddings_original,valid_dataset.y)
-    embedding_dataset,embedding_dataset_zscored=convert_embeddings(embeddings_original,dataset.y)
-
-
-    train_layers=[]
-    train_layers_zscored=[]
-    test_layers=[]
-    test_layers_zscored=[]
-    valid_layers=[]
-    valid_layers_zscored=[]
-    dataset_layers=[]
-    dataset_layers_zscored=[]
-
-    for df_mols_layer in train_activations_embeddings_original:
-        embedding_train_dataset_layer ,embedding_train_dataset_zscored_layer= convert_embeddings(df_mols_layer,train_dataset.y)
-        train_layers.append(embedding_train_dataset_layer)
-        train_layers_zscored.append(embedding_train_dataset_zscored_layer)
-
-    for df_mols_layer in test_activations_embeddings_original:
-        embedding_test_dataset_layer,embedding_test_dataset_zscored_layer =convert_embeddings(df_mols_layer,test_dataset.y)
-        test_layers.append(embedding_test_dataset_layer)
-        test_layers_zscored.append(embedding_test_dataset_zscored_layer)
-
-    for df_mols_layer in valid_activations_embeddings_original:
-        embedding_valid_dataset_layer,embedding_valid_dataset_zscored_layer=convert_embeddings(df_mols_layer,valid_dataset.y)
-        valid_layers.append(embedding_valid_dataset_layer)
-        valid_layers_zscored.append(embedding_valid_dataset_zscored_layer)
-
-    for df_mols_layer in activations_embeddings_original:
-        embedding_dataset_layer,embedding_dataset_zscored_layer=convert_embeddings(df_mols_layer,dataset.y)
-        dataset_layers.append(embedding_dataset_layer)
-        dataset_layers_zscored.append(embedding_dataset_zscored_layer)
-
-    
-    
-    return dataset, embedding_train_dataset,embedding_test_dataset,embedding_valid_dataset,embedding_dataset,train_layers,test_layers,valid_layers,dataset_layers,\
-    embedding_train_dataset_zscored,embedding_test_dataset_zscored,embedding_valid_dataset_zscored,embedding_dataset_zscored,train_layers_zscored,test_layers_zscored,valid_layers_zscored,dataset_layers_zscored
-
-
-
-
-
-
-
-def extract_embedding_molformer_brief(lm,tokenizer,Tasks,input_file,smiles_field):
-    
-    featurizer = dc.feat.DummyFeaturizer()
-    
-    randomstratifiedsplitter = dc.splits.RandomStratifiedSplitter()
-    loader = dc.data.CSVLoader(tasks=Tasks,
-                       feature_field=smiles_field,
-                       featurizer=featurizer
-                              )
-    dataset = loader.create_dataset(inputs=[input_file])
-    n_tasks = len(dataset.tasks)
-
-    embeddings_original, activations_embeddings_original=embed(lm, dataset.X, tokenizer, batch_size=64)
-
-
-
-    
-
-    # print(dataset.y)
-    
-    embeddings_original = torch.cat(embeddings_original).numpy()
-    X=torch.from_numpy(embeddings_original)
-    if len(Tasks)!=0:
-        y=dataset.y
-    else:
-        y=None
-    
-   
-    X_layers=[]
-    y_layers=[]
-    # dataset_layers_zscored=[]
-
-
-    
-
-   
-    for df_mols_layer in activations_embeddings_original:
-
-        embeddings_original = torch.cat(df_mols_layer).numpy()
-        X=torch.from_numpy(embeddings_original)
-        X_layers.append(X)
-        if len(Tasks)!=0:
-            # y=torch.from_numpy(y)
-            y_layers.append(y)
-        else:
-            y_layers.append(None)
-
-
-        
-        
-        
-
-    
-    
-    return X,y,X_layers,y_layers
-
-
-
-
-
-
-
-
-
-def convert_embeddings(embeddings_original,y):
-    # print(y)
-    embeddings_original = torch.cat(embeddings_original).numpy()
-    y=torch.from_numpy(y)
-    embeddings=torch.from_numpy(embeddings_original)
-    embedding_dataset = torch.utils.data.TensorDataset(embeddings.cpu(), y)
-    embedding_loader = torch.utils.data.DataLoader(embedding_dataset, batch_size=128, shuffle=True)
-    embedding_dataset = dc.data.DiskDataset.from_numpy(embeddings_original.tolist(),y.tolist())
-
-
-    embeddings_zscored = embeddings.cpu()
-    embeddings_zscored = StandardScaler().fit_transform(embeddings_zscored)
-    embedding_dataset_zscored = dc.data.DiskDataset.from_numpy(embeddings_zscored,y.tolist())
-
-    
-    return embedding_dataset,embedding_dataset_zscored
-
-
-
-# def convert_embeddings_brief(embeddings_original,y):
-    
-#     return embeddings,y
+# def extract_embedding_molformer(lm,tokenizer,Tasks,input_file,smiles_field):
+#
+#     featurizer = dc.feat.DummyFeaturizer()
+#
+#     randomstratifiedsplitter = dc.splits.RandomStratifiedSplitter()
+#     loader = dc.data.CSVLoader(tasks=Tasks,
+#                        feature_field=smiles_field,
+#                        featurizer=featurizer
+#                               )
+#     dataset = loader.create_dataset(inputs=[input_file])
+#     n_tasks = len(dataset.tasks)
+#     train_dataset, test_dataset, valid_dataset = randomstratifiedsplitter.train_valid_test_split(dataset, frac_train = 0.8, frac_valid = 0.1, frac_test = 0.1, seed = 1)
+#     train_embeddings_original, train_activations_embeddings_original=embed(lm, train_dataset.X, tokenizer, batch_size=64)
+#     test_embeddings_original, test_activations_embeddings_original=embed(lm, test_dataset.X, tokenizer, batch_size=64)
+#     valid_embeddings_original, valid_activations_embeddings_original=embed(lm, valid_dataset.X, tokenizer, batch_size=64)
+#     embeddings_original, activations_embeddings_original=embed(lm, dataset.X, tokenizer, batch_size=64)
+#
+#
+#
+#
+#
+#
+#
+#
+#     embedding_train_dataset,embedding_train_dataset_zscored=convert_embeddings(train_embeddings_original,train_dataset.y)
+#     embedding_test_dataset,embedding_test_dataset_zscored=convert_embeddings(test_embeddings_original,test_dataset.y)
+#     embedding_valid_dataset,embedding_valid_dataset_zscored=convert_embeddings(valid_embeddings_original,valid_dataset.y)
+#     embedding_dataset,embedding_dataset_zscored=convert_embeddings(embeddings_original,dataset.y)
+#
+#
+#     train_layers=[]
+#     train_layers_zscored=[]
+#     test_layers=[]
+#     test_layers_zscored=[]
+#     valid_layers=[]
+#     valid_layers_zscored=[]
+#     dataset_layers=[]
+#     dataset_layers_zscored=[]
+#
+#     for df_mols_layer in train_activations_embeddings_original:
+#         embedding_train_dataset_layer ,embedding_train_dataset_zscored_layer= convert_embeddings(df_mols_layer,train_dataset.y)
+#         train_layers.append(embedding_train_dataset_layer)
+#         train_layers_zscored.append(embedding_train_dataset_zscored_layer)
+#
+#     for df_mols_layer in test_activations_embeddings_original:
+#         embedding_test_dataset_layer,embedding_test_dataset_zscored_layer =convert_embeddings(df_mols_layer,test_dataset.y)
+#         test_layers.append(embedding_test_dataset_layer)
+#         test_layers_zscored.append(embedding_test_dataset_zscored_layer)
+#
+#     for df_mols_layer in valid_activations_embeddings_original:
+#         embedding_valid_dataset_layer,embedding_valid_dataset_zscored_layer=convert_embeddings(df_mols_layer,valid_dataset.y)
+#         valid_layers.append(embedding_valid_dataset_layer)
+#         valid_layers_zscored.append(embedding_valid_dataset_zscored_layer)
+#
+#     for df_mols_layer in activations_embeddings_original:
+#         embedding_dataset_layer,embedding_dataset_zscored_layer=convert_embeddings(df_mols_layer,dataset.y)
+#         dataset_layers.append(embedding_dataset_layer)
+#         dataset_layers_zscored.append(embedding_dataset_zscored_layer)
+#
+#
+#
+#     return dataset, embedding_train_dataset,embedding_test_dataset,embedding_valid_dataset,embedding_dataset,train_layers,test_layers,valid_layers,dataset_layers,\
+#     embedding_train_dataset_zscored,embedding_test_dataset_zscored,embedding_valid_dataset_zscored,embedding_dataset_zscored,train_layers_zscored,test_layers_zscored,valid_layers_zscored,dataset_layers_zscored
+#
+
+
+
+
+
+
+# def extract_embedding_molformer_fromfile(lm,tokenizer,Tasks,input_file,smiles_field):
+#
+#     featurizer = dc.feat.DummyFeaturizer()
+#
+#     randomstratifiedsplitter = dc.splits.RandomStratifiedSplitter()
+#     loader = dc.data.CSVLoader(tasks=Tasks,
+#                        feature_field=smiles_field,
+#                        featurizer=featurizer
+#                               )
+#     dataset = loader.create_dataset(inputs=[input_file])
+#     n_tasks = len(dataset.tasks)
+#     train_dataset, test_dataset, valid_dataset = randomstratifiedsplitter.train_valid_test_split(dataset, frac_train = 0.8, frac_valid = 0.1, frac_test = 0.1, seed = 1)
+#     train_embeddings_original, train_activations_embeddings_original=embed(lm, train_dataset.X, tokenizer, batch_size=64)
+#     test_embeddings_original, test_activations_embeddings_original=embed(lm, test_dataset.X, tokenizer, batch_size=64)
+#     valid_embeddings_original, valid_activations_embeddings_original=embed(lm, valid_dataset.X, tokenizer, batch_size=64)
+#     embeddings_original, activations_embeddings_original=embed(lm, dataset.X, tokenizer, batch_size=64)
+#
+#
+#
+#
+#
+#
+#
+#
+#     embedding_train_dataset,embedding_train_dataset_zscored=convert_embeddings(train_embeddings_original,train_dataset.y)
+#     embedding_test_dataset,embedding_test_dataset_zscored=convert_embeddings(test_embeddings_original,test_dataset.y)
+#     embedding_valid_dataset,embedding_valid_dataset_zscored=convert_embeddings(valid_embeddings_original,valid_dataset.y)
+#     embedding_dataset,embedding_dataset_zscored=convert_embeddings(embeddings_original,dataset.y)
+#
+#
+#     train_layers=[]
+#     train_layers_zscored=[]
+#     test_layers=[]
+#     test_layers_zscored=[]
+#     valid_layers=[]
+#     valid_layers_zscored=[]
+#     dataset_layers=[]
+#     dataset_layers_zscored=[]
+#
+#     for df_mols_layer in train_activations_embeddings_original:
+#         embedding_train_dataset_layer ,embedding_train_dataset_zscored_layer= convert_embeddings(df_mols_layer,train_dataset.y)
+#         train_layers.append(embedding_train_dataset_layer)
+#         train_layers_zscored.append(embedding_train_dataset_zscored_layer)
+#
+#     for df_mols_layer in test_activations_embeddings_original:
+#         embedding_test_dataset_layer,embedding_test_dataset_zscored_layer =convert_embeddings(df_mols_layer,test_dataset.y)
+#         test_layers.append(embedding_test_dataset_layer)
+#         test_layers_zscored.append(embedding_test_dataset_zscored_layer)
+#
+#     for df_mols_layer in valid_activations_embeddings_original:
+#         embedding_valid_dataset_layer,embedding_valid_dataset_zscored_layer=convert_embeddings(df_mols_layer,valid_dataset.y)
+#         valid_layers.append(embedding_valid_dataset_layer)
+#         valid_layers_zscored.append(embedding_valid_dataset_zscored_layer)
+#
+#     for df_mols_layer in activations_embeddings_original:
+#         embedding_dataset_layer,embedding_dataset_zscored_layer=convert_embeddings(df_mols_layer,dataset.y)
+#         dataset_layers.append(embedding_dataset_layer)
+#         dataset_layers_zscored.append(embedding_dataset_zscored_layer)
+#
+#
+#
+#     return dataset, embedding_train_dataset,embedding_test_dataset,embedding_valid_dataset,embedding_dataset,train_layers,test_layers,valid_layers,dataset_layers,\
+#     embedding_train_dataset_zscored,embedding_test_dataset_zscored,embedding_valid_dataset_zscored,embedding_dataset_zscored,train_layers_zscored,test_layers_zscored,valid_layers_zscored,dataset_layers_zscored
+
+
+
+
+
+
+
+# def extract_embedding_molformer_brief(lm,tokenizer,Tasks,input_file,smiles_field):
+#
+#     featurizer = dc.feat.DummyFeaturizer()
+#
+#     randomstratifiedsplitter = dc.splits.RandomStratifiedSplitter()
+#     loader = dc.data.CSVLoader(tasks=Tasks,
+#                        feature_field=smiles_field,
+#                        featurizer=featurizer
+#                               )
+#     dataset = loader.create_dataset(inputs=[input_file])
+#     n_tasks = len(dataset.tasks)
+#
+#     embeddings_original, activations_embeddings_original=embed(lm, dataset.X, tokenizer, batch_size=64)
+#
+#
+#
+#
+#
+#     # print(dataset.y)
+#
+#     embeddings_original = torch.cat(embeddings_original).numpy()
+#     X=torch.from_numpy(embeddings_original)
+#     if len(Tasks)!=0:
+#         y=dataset.y
+#     else:
+#         y=None
+#
+#
+#     X_layers=[]
+#     y_layers=[]
+#     # dataset_layers_zscored=[]
+#
+#
+#
+#
+#
+#     for df_mols_layer in activations_embeddings_original:
+#
+#         embeddings_original = torch.cat(df_mols_layer).numpy()
+#         X=torch.from_numpy(embeddings_original)
+#         X_layers.append(X)
+#         if len(Tasks)!=0:
+#             # y=torch.from_numpy(y)
+#             y_layers.append(y)
+#         else:
+#             y_layers.append(None)
+#
+#
+#
+#
+#
+#
+#
+#
+#     return X,y,X_layers,y_layers
+
+
+
+
+
+
+
+
+
+# def convert_embeddings(embeddings_original,y):
+#     # print(y)
+#     embeddings_original = torch.cat(embeddings_original).numpy()
+#     y=torch.from_numpy(y)
+#     embeddings=torch.from_numpy(embeddings_original)
+#     embedding_dataset = torch.utils.data.TensorDataset(embeddings.cpu(), y)
+#     embedding_loader = torch.utils.data.DataLoader(embedding_dataset, batch_size=128, shuffle=True)
+#     embedding_dataset = dc.data.DiskDataset.from_numpy(embeddings_original.tolist(),y.tolist())
+#
+#
+#     embeddings_zscored = embeddings.cpu()
+#     embeddings_zscored = StandardScaler().fit_transform(embeddings_zscored)
+#     embedding_dataset_zscored = dc.data.DiskDataset.from_numpy(embeddings_zscored,y.tolist())
+#
+#
+#     return embedding_dataset,embedding_dataset_zscored
+
+def compute_statistics(df_ravia_similarity_mols):
+    ravia_mean=df_ravia_similarity_mols['nonStereoSMILES'].apply(len).mean()
+    ravia_std=df_ravia_similarity_mols['nonStereoSMILES'].apply(len).std()
+    ravia_max=df_ravia_similarity_mols['nonStereoSMILES'].apply(len).max()
+    ravia_min=df_ravia_similarity_mols['nonStereoSMILES'].apply(len).min()
+    print(ravia_min, ravia_max, ravia_mean, ravia_std)
+
+    # def convert_embeddings_brief(embeddings_original,y):
+    #
+    #     return embeddings,y
 

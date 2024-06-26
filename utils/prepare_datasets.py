@@ -135,7 +135,6 @@ def prepare_mols_helper_mixture(df_mols_embeddings_original,df_mols,start,end,mo
     
         
     df_mols_embeddings=postproce_molembeddings(df_mols_embeddings_original,df_mols[index])
-    print("columns", df_mols_embeddings.columns.values.tolist())
 
     
     
