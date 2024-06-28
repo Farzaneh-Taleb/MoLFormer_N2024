@@ -18,6 +18,7 @@ from scipy.stats import pearsonr
 from sklearn.metrics import r2_score
 import itertools
 import math
+import random
 def batch_split(data, batch_size=64):
     i = 0
     while i < len(data):
@@ -918,4 +919,13 @@ def compute_statistics(df_ravia_similarity_mols):
     # def convert_embeddings_brief(embeddings_original,y):
     #
     #     return embeddings,y
+
+
+def set_seeds(seed):
+    seed = 2024
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
