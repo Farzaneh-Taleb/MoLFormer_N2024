@@ -6,7 +6,7 @@ from sklearn.decomposition import PCA
 
 
 
-def pipeline_regression(X_train,y_train,X_test,seed,regression_method,n_components=None):
+def pipeline_regression(X_train,y_train,X_test,regression_method,seed,n_components=None):
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
