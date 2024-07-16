@@ -60,6 +60,7 @@ class MultitaskModel(pl.LightningModule):
             self.hparams.dataset_name + "min_valid_loss": torch.finfo(torch.float32).max,
             self.hparams.dataset_name + "min_epoch": 0,
         }
+        # print(tokenizer.vocab,"tokenizer.vocab")
 
         # Word embeddings layer
         n_vocab, d_emb = len(tokenizer.vocab), config.n_embd
@@ -620,7 +621,7 @@ def main():
     checkpoint_path = os.path.join(checkpoints_folder, margs.measure_name)
     checkpoint_callback = pl.callbacks.ModelCheckpoint(period=1, save_last=True, dirpath=checkpoint_dir, filename='checkpoint', verbose=True)
 
-    print(margs)
+    # print(margs)
 
     logger = TensorBoardLogger(
         save_dir=checkpoint_root,

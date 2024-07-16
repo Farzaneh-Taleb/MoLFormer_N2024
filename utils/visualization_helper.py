@@ -1,6 +1,7 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from IPython.core.display_functions import display
 from matplotlib.patches import Patch
 from scipy.stats import gaussian_kde
 import numpy as np
@@ -211,7 +212,8 @@ def plot_bars(data, title, filename):
             # we recenter the bar
             patch.set_x(patch.get_x() + diff * .5)
 
-def combine_visualize(df1, df2, df3, tasks, ax, title, type="corr", figure_name="def"):
+def combine_visualize(df1, df2, df3, tasks, ax, title, abs=False, figure_name="def"):
+
     df12 = pd.concat((df1, df2))
     df_combined = pd.concat((df12, df3))
     melted_df_keller = df_combined.melt(id_vars=['model'], var_name='descritpor')
@@ -219,13 +221,13 @@ def combine_visualize(df1, df2, df3, tasks, ax, title, type="corr", figure_name=
     # g1.set_axis_labels("", title)
     # g1.legend.set_title("")
     # g1.set_xticklabels(tasks, rotation=45)
-    if type == "corr":
+    if abs:
         melted_df_keller['value'] = melted_df_keller['value'].abs()
     else:
         # melted_df_keller['value'] = melted_df_keller[['value']].apply(np.sqrt)
         pass
-    print(melted_df_keller.groupby('model')['value'].mean().reset_index())
-    print(melted_df_keller.groupby('model')['value'].sem().reset_index() * 2)
+    # print(melted_df_keller.groupby('model')['value'].mean().reset_index())
+    # print(melted_df_keller.groupby('model')['value'].sem().reset_index() * 2)
     g1 = sns.barplot(
         data=melted_df_keller,
         x="descritpor", y="value", hue="model",
@@ -301,14 +303,21 @@ def post_process_dataframe(corrss, msess, df_cor_pom, df_cor_alva, df_mse_pom, d
     # combine_visualize_separate(corrss.loc[corrss["layer"]==12,].iloc[:,corrss.columns != 'layer'], df_cor_pom,df_cor_alva,tasks,ax_agg[0],'Correlation Coefficient',figure_name="Correlation_Avg_"+figure_name)
     g1 = combine_visualize(corrss.loc[corrss["layer"] == 12].iloc[:, corrss.columns != 'layer'], df_cor_pom,
                            df_cor_alva, tasks, ax[0], 'Correlation Coefficient',
-                           figure_name="Correlation_" + figure_name)
-    g1.set_xlabel('')
+                           figure_name="Correlation_" + figure_name,abs=True)
+
     # combine_visualize_separate(msess.loc[msess["layer"]==12].iloc[:,msess.columns != 'layer'], df_mse_pom,df_mse_alva,tasks,ax_agg[1],'MSE',type="mse",figure_name="MSE_Avg_"+figure_name)
     g2 = combine_visualize(msess.loc[msess["layer"] == 12].iloc[:, msess.columns != 'layer'], df_mse_pom,
-                           df_mse_alva, tasks, ax[1], 'NRMSE', type="mse", figure_name="MSE__" + figure_name)
+                           df_mse_alva, tasks, ax[1], 'NRMSE', figure_name="MSE__" + figure_name)
+    vertical_plot_tweak(f2, figure_name, g1, g2)
+
+    return melted_corrss_filtered
+
+
+def vertical_plot_tweak(f2, figure_name, g1, g2):
+    g1.set_xlabel('')
     g2.set_xlabel('Descriptor')
     g1.legend().set_title("Model")
-    handles, labels = g1.get_legend_handles_labels()
+    # handles, labels = g1.get_legend_handles_labels()
     g1.get_legend().remove()
     g2.legend().set_title("Model")
     handles, labels = g2.get_legend_handles_labels()
@@ -323,4 +332,3 @@ def post_process_dataframe(corrss, msess, df_cor_pom, df_cor_alva, df_mse_pom, d
     # plt.legend(title='Smoker', loc='upper left',)
     plt.subplots_adjust(hspace=0.6)
     f2.savefig(figure_name + ".pdf", bbox_inches='tight')
-    return melted_corrss_filtered

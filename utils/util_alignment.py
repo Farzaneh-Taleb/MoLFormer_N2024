@@ -1,10 +1,19 @@
-import torch
-from fast_transformers.masking import LengthMask as LM
+import os
+conda_env = os.environ.get('CONDA_DEFAULT_ENV')
+
+if conda_env== 'Mol':
+    from fast_transformers.masking import LengthMask as LM
+if conda_env== 'Mol' or conda_env== 'open_pom':
+    import deepchem as dc
+    import torch
+
+print(conda_env)
+
 from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
 from sklearn.decomposition import PCA
 import numpy as np 
-import deepchem as dc
+
 from sklearn.preprocessing import StandardScaler
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -687,39 +696,32 @@ def plot_lines(data,title,filename):
                
                )
 
-    def extract_molformer_representations(lm, tokenizer, Tasks, input_file, smiles_field):
-
-        featurizer = dc.feat.DummyFeaturizer()
-
-        loader = dc.data.CSVLoader(tasks=Tasks,
-                                   feature_field=smiles_field,
-                                   featurizer=featurizer
-                                   )
-        dataset = loader.create_dataset(inputs=[input_file])
-        embeddings_original, activations_embeddings_original = embed(lm, dataset.X, tokenizer, batch_size=64)
-
-        embeddings_original = torch.cat(embeddings_original).numpy()
+def extract_molformer_representations(lm, tokenizer, Tasks, input_file, smiles_field):
+    featurizer = dc.feat.DummyFeaturizer()
+    loader = dc.data.CSVLoader(tasks=Tasks,
+                               feature_field=smiles_field,
+                               featurizer=featurizer
+                               )
+    dataset = loader.create_dataset(inputs=[input_file])
+    embeddings_original, activations_embeddings_original = embed(lm, dataset.X, tokenizer, batch_size=64)
+    embeddings_original = torch.cat(embeddings_original).numpy()
+    X = torch.from_numpy(embeddings_original)
+    if len(Tasks) != 0:
+        y = dataset.y
+    else:
+        y = None
+    X_layers = []
+    y_layers = []
+    for df_mols_layer in activations_embeddings_original:
+        embeddings_original = torch.cat(df_mols_layer).numpy()
         X = torch.from_numpy(embeddings_original)
+        X_layers.append(X)
         if len(Tasks) != 0:
-            y = dataset.y
+            # y=torch.from_numpy(y)
+            y_layers.append(y)
         else:
-            y = None
-
-        X_layers = []
-        y_layers = []
-
-        for df_mols_layer in activations_embeddings_original:
-
-            embeddings_original = torch.cat(df_mols_layer).numpy()
-            X = torch.from_numpy(embeddings_original)
-            X_layers.append(X)
-            if len(Tasks) != 0:
-                # y=torch.from_numpy(y)
-                y_layers.append(y)
-            else:
-                y_layers.append(None)
-
-        return X, y, X_layers, y_layers
+            y_layers.append(None)
+    return X, y, X_layers, y_layers
 
 
 # def extract_embedding_molformer(lm,tokenizer,Tasks,input_file,smiles_field):
@@ -902,9 +904,11 @@ def compute_statistics(df_ravia_similarity_mols):
 
 
 def set_seeds(seed):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
+    if conda_env=='Mol' or conda_env=='open_pom':
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
     random.seed(seed)
-    torch.cuda.manual_seed_all(seed)
+
 

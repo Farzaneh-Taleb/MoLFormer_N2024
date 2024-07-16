@@ -15,7 +15,7 @@ class MolTranBertTokenizer(BertTokenizer):
                  cls_token='<bos>',
                  mask_token='<mask>',
                  **kwargs):
-        print(os.getcwd())
+        # print(os.getcwd())
         super().__init__(vocab_file,
                          unk_token=unk_token,
                          sep_token=sep_token,
