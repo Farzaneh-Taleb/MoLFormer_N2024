@@ -1,9 +1,15 @@
+
+import os
+conda_env = os.environ.get('CONDA_DEFAULT_ENV')
+if conda_env== 'Mol':
+    import torch
+    from fast_transformers.masking import LengthMask as LM
+    import deepchem as dc
+
+
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 import numpy as np
-import torch
-from fast_transformers.masking import LengthMask as LM
-import deepchem as dc
 import ast
 from constants import *
 # from util_alignment import *
