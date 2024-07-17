@@ -34,6 +34,8 @@ from rdkit import Chem
 #from pytorch_lightning.plugins.sharded_plugin import DDPShardedPlugin
 from constants import gs_lf_tasks
 from utils.prepare_datasets import extract_set_idxs, extract_set_from_indices_df
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
 def normalize_smiles(smi, canonical, isomeric):
     try:
         normalized = Chem.MolToSmiles(
@@ -619,7 +621,7 @@ def main():
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     checkpoint_path = os.path.join(checkpoints_folder, margs.measure_name)
-    checkpoint_callback = pl.callbacks.ModelCheckpoint(period=1, save_last=True, dirpath=checkpoint_dir, filename='checkpoint', verbose=True)
+    checkpoint_callback = pl.callbacks.ModelCheckpoint(period=1, save_last=False,save_top_k=1, dirpath=checkpoint_dir, filename='checkpoint', verbose=True,monitor='avg_val_loss', mode='min')
 
     # print(margs)
 
@@ -657,6 +659,7 @@ def main():
         resume_from_checkpoint=resume_from_checkpoint,
         checkpoint_callback=checkpoint_callback,
         num_sanity_val_steps=0,
+        callbacks=[EarlyStopping(monitor='avg_val_loss', patience=5, mode='min')],
     )
 
     tic = time.perf_counter()
