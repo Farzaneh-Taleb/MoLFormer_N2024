@@ -28,6 +28,8 @@ from sklearn.metrics import r2_score
 # import itertools
 # import math
 import random
+from constants import *
+from constants import *
 def batch_split(data, batch_size=64):
     i = 0
     while i < len(data):
@@ -664,3 +666,85 @@ def set_seeds(seed):
     random.seed(seed)
 
 
+def grand_average(df, ds):
+    if ds == "keller":
+        descriptors = keller_descriptors
+    elif ds == "keller2":
+        descriptors = keller_descriptors2
+
+    elif ds == "sagar":
+        descriptors = sagar_descriptors
+
+    elif ds == "sagar2":
+        descriptors = sagar_descriptors2
+    elif ds == "dravinsk":
+        descriptors = dravinsk_descriptors
+    else:
+        raise ValueError("Invalid dataset")
+
+    df_groupbyCID = df.groupby('CID')[descriptors].mean().reset_index()
+
+    df_groupbyCID['y'] = df_groupbyCID.loc[:, descriptors[0]:descriptors[-1]].values.tolist()
+    df_embeddings = df.drop_duplicates(subset=['CID'])
+    df_embeddings = df_embeddings[['CID', 'embeddings']]
+    df_groupbyCID = pd.merge(df_groupbyCID, df_embeddings, on='CID', how='left')
+    return df_groupbyCID
+
+
+def average_over_subject(df, ds):
+    if ds == "keller":
+        descriptors = keller_descriptors
+    elif ds == "keller2":
+        descriptors = keller_descriptors2
+
+    elif ds == "sagar":
+        descriptors = sagar_descriptors
+
+    elif ds == "sagar2":
+        descriptors = sagar_descriptors2
+    elif ds == "dravinsk":
+        descriptors = dravinsk_descriptors
+    else:
+        raise ValueError("Invalid dataset")
+
+    df_groupbyCID = df.groupby(['CID', 'subject'])[descriptors].mean().reset_index()
+
+    df_groupbyCID['y'] = df_groupbyCID.loc[:, descriptors[0]:descriptors[-1]].values.tolist()
+    df_embeddings = df.drop_duplicates(subset=['CID'])
+    df_embeddings = df_embeddings[['CID', 'embeddings']]
+    df_groupbyCID = pd.merge(df_groupbyCID, df_embeddings, on='CID', how='left')
+    return df_groupbyCID
+
+
+def post_process_results_df(mserrorrs_corssvalidated, correlations_corssvalidated):
+    mserrorrs_corssvalidated_array = np.asarray(mserrorrs_corssvalidated)
+    if len(mserrorrs_corssvalidated_array.shape) == 3:
+        mserrorrs_corssvalidated_array = np.squeeze(mserrorrs_corssvalidated_array, -1)
+        mserrorrs_corssvalidated_array = np.moveaxis(mserrorrs_corssvalidated_array, 0, 1)
+    # print(mserrorrs_corssvalidated_array.shape,"shapeeee1")
+
+    correlations_corssvalidated = np.asarray(correlations_corssvalidated)
+    if len(correlations_corssvalidated.shape) == 4:
+        correlations_corssvalidated = np.moveaxis(correlations_corssvalidated, 0, 1)
+        # print("correlations_corssvalidateds",correlations_corssvalidated.shape)
+        correlations_corssvalidated = np.squeeze(correlations_corssvalidated, 2)
+    # print(correlations_corssvalidated.shape,"shapeeee2")
+    statistics_correlations_corssvalidated_array = correlations_corssvalidated[:, :, 0]
+    pvalues_correlations_corssvalidated_array = correlations_corssvalidated[:, :, 1]
+
+    return mserrorrs_corssvalidated_array, statistics_correlations_corssvalidated_array, pvalues_correlations_corssvalidated_array
+
+
+def save_predictions(df_predictions, ds,title):
+    if ds.startswith("keller"):
+        tasks = keller_tasks
+    elif ds.startswith("sagar"):
+        tasks = sagar_tasks
+    else:
+        raise ValueError("Invalid dataset")
+    df_predictions = df_predictions.rename(columns=dict(
+        zip(df_predictions.columns[1:len(tasks) + 1], [tasks[i] + "_predicted" for i in range(len(tasks))])))
+    df_predictions = df_predictions.rename(columns=dict(zip(df_predictions.columns[len(tasks) + 1:len(tasks) * 2 + 1],
+                                                            [tasks[i] + "_true" for i in range(len(tasks))])))
+
+    df_predictions.to_csv(ds + '_'+ title +'.csv', index=False)
