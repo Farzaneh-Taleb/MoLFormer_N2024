@@ -6,10 +6,11 @@ from matplotlib.patches import Patch
 from scipy.stats import gaussian_kde
 import numpy as np
 from sklearn.decomposition import PCA
-
+from sklearn import manifold
+# import umap
 sns.set_theme(style='white')
 
-def pom_frame(pom_embeds, y, dir, required_desc, title, size1, size2, size3):
+def pom_frame(pom_embeds, y, dir, required_desc, title, size1, size2, size3,reduction_method = 'PCA',perplexity=None):
     sns.set_style("ticks")
     sns.despine()
 
@@ -21,15 +22,29 @@ def pom_frame(pom_embeds, y, dir, required_desc, title, size1, size2, size3):
     type3 = {'ethereal': '#F2F6EC', 'subs': {'cognac': '#BCE2D2', 'fermented': '#79944F', 'alcoholic': '#C2DA8F'}}
 
     # Assuming you have your features in the 'features' array
-    pca = PCA(n_components=2,
+    if reduction_method == 'PCA':
+        pca = PCA(n_components=2,
               iterated_power=10)  # You can choose the number of components you want (e.g., 2 for 2D visualization)
-    reduced_features = pca.fit_transform(pom_embeds)  # try different variations
+        reduced_features = pca.fit_transform(pom_embeds)  # try different variations
+        variance_explained = pca.explained_variance_ratio_
+        variance_pc1 = variance_explained[0]
+        variance_pc2 = variance_explained[1]
+        print(variance_pc1,variance_pc2)
 
-    variance_explained = pca.explained_variance_ratio_
+    elif reduction_method == 'tsne':
+        tsne = manifold.TSNE(
+            n_components=2,
+            init="random",
+            random_state=0,
+            perplexity=perplexity,
 
-    # Variance explained by PC1 and PC2
-    variance_pc1 = variance_explained[0]
-    variance_pc2 = variance_explained[1]
+        )
+        reduced_features = tsne.fit_transform(pom_embeds)
+    elif reduction_method == 'UMAP':
+        reduced_features = umap.UMAP(n_components=2, n_neighbors=perplexity, min_dist=0.0, metric='euclidean').fit_transform(X=pom_embeds)
+
+    else:
+        raise ValueError('Invalid reduction method')
 
     # if is_preds:
     #     y = np.where(y_preds>threshold, 1.0, 0.0) # try quartile range (or rank)
@@ -40,6 +55,7 @@ def pom_frame(pom_embeds, y, dir, required_desc, title, size1, size2, size3):
     x_grid, y_grid = np.meshgrid(np.linspace(reduced_features[:, 0].min(), reduced_features[:, 0].max(), 500),
                                  np.linspace(reduced_features[:, 1].min(), reduced_features[:, 1].max(), 500))
     grid_points = np.vstack([x_grid.ravel(), y_grid.ravel()])
+    print(reduced_features[:, 0].min(), reduced_features[:, 0].max(),reduced_features[:, 1].min(), reduced_features[:, 1].max())
 
     def get_kde_values(label):
         plot_idx = required_desc.index(label)
@@ -80,10 +96,13 @@ def pom_frame(pom_embeds, y, dir, required_desc, title, size1, size2, size3):
     # plt.show()
     # png_file = os.path.join(dir, 'pom_frame.png')
     # plt.savefig(png_file)
-    plt.savefig("figs/realign_islands" + title + ".svg")
-    plt.savefig("figs/realign_islands" + title + ".pdf")
-    plt.show()
-    plt.close()
+    plt.savefig("figs/islands/realign_islands_" + title+"_" + reduction_method+"_" +str(perplexity) +".svg")
+    plt.savefig("figs/islands/realign_islands_" + title+"_" + reduction_method+"_" +str(perplexity) +".pdf")
+    plt.savefig("figs/islands/realign_islands_" + title+"_" + reduction_method+"_" +str(perplexity) +".jpg")
+
+
+    # plt.show()
+    # plt.close()
 
 def plot_lines(data, title, filename):
     df_corrs = pd.DataFrame.from_dict(data, orient='index',
@@ -215,7 +234,7 @@ def plot_bars(data, title, filename):
             # we recenter the bar
             patch.set_x(patch.get_x() + diff * .5)
 
-def combine_visualize(dfs, tasks, ax, title, abs=False, figure_name="def"):
+def combine_visualize(dfs, tasks, ax, title, abs=False, figure_name="def",width=None):
     plt.rcParams["font.size"] = 40
     df_combined = pd.concat(dfs)
     # for df in dfs:
@@ -239,7 +258,12 @@ def combine_visualize(dfs, tasks, ax, title, abs=False, figure_name="def"):
     g1 = sns.barplot(
         data=melted_df_keller,
         x="descritpor", y="value", hue="model",
-        errorbar="se", ax=ax, palette=['#4d79a4', '#ecc947', '#b07aa0','#103961'], width=0.6)
+        errorbar="se", ax=ax, palette=['#4d79a4', '#ecc947', '#b07aa0','#103961'], width=width*4)
+
+    if width is not None:
+        for patch in g1.patches:
+            patch.set_width(width)  # Set the desired width
+
     g1.set(xlabel='Model', ylabel=title)
     g1.spines['top'].set_visible(False)
     g1.spines['right'].set_visible(False)
@@ -290,7 +314,7 @@ def combine_visualize_separate(df1, df2, df3, tasks, ax, title, type="corr", fig
     # g.set_xticklabels(tasks, rotation=45)
     # g2.figure.savefig(figure_name+".pdf")
 def post_process_dataframe(corrss, msess,corrss_finetuned, msess_finetuned, df_cor_pom, df_cor_alva, df_mse_pom, df_mse_alva, tasks,
-                           figure_name="def"):
+                           figure_name="def",width=None):
     plt.rcParams["font.size"] = 40
 
     # plt.rcParams['xtick.labelsize'] = 14
@@ -321,17 +345,17 @@ def post_process_dataframe(corrss, msess,corrss_finetuned, msess_finetuned, df_c
     # data=melted_corrss_filtered_decreasing, x="layer", y="value", hue="descritpor", err_style='bars',ax=ax[1]
     # )
     # f1, ax_agg = plt.subplots(1, 2,figsize=(20, 5))
-    f2, ax = plt.subplots(2, 1, figsize=(22, 22))
+    f2, ax = plt.subplots(2, 1, figsize=(25, 22))
 
 
     # combine_visualize_separate(corrss.loc[corrss["layer"]==12,].iloc[:,corrss.columns != 'layer'], df_cor_pom,df_cor_alva,tasks,ax_agg[0],'Correlation Coefficient',figure_name="Correlation_Avg_"+figure_name)
     g1 = combine_visualize((corrss.loc[corrss["layer"] == 12].iloc[:, corrss.columns != 'layer'],corrss_finetuned.loc[corrss_finetuned["layer"] == 12].iloc[:, corrss_finetuned.columns != 'layer'], df_cor_pom,
                            df_cor_alva), tasks, ax[0], 'Correlation Coefficient',
-                           figure_name="Correlation_" + figure_name,abs=True)
+                           figure_name="Correlation_" + figure_name,abs=True,width=width)
 
     # combine_visualize_separate(msess.loc[msess["layer"]==12].iloc[:,msess.columns != 'layer'], df_mse_pom,df_mse_alva,tasks,ax_agg[1],'MSE',type="mse",figure_name="MSE_Avg_"+figure_name)
     g2 = combine_visualize((msess.loc[msess["layer"] == 12].iloc[:, msess.columns != 'layer'], msess_finetuned.loc[msess_finetuned["layer"] == 12].iloc[:, msess_finetuned.columns != 'layer'], df_mse_pom,
-                           df_mse_alva), tasks, ax[1], 'NRMSE', figure_name="MSE__" + figure_name)
+                           df_mse_alva), tasks, ax[1], 'NRMSE', figure_name="MSE__" + figure_name,width=width)
     vertical_plot_tweak(f2, figure_name, g1, g2)
 
     # return melted_corrss_filtered
