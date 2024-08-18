@@ -392,22 +392,26 @@ def extract_set_from_indices_df(base_path, ds_path, indices_train, indices_valid
 
 def extract_set_from_indices(base_path, ds_path,x_att,y_att, indices_train, indices_valid, indices_test):
     input_file_pom = base_path + ds_path
-    gs_lf_pom = pd.read_csv(input_file_pom)
-    gs_lf_pom = prepare_dataset(gs_lf_pom, x_att, y_att)
+    gs_lf = pd.read_csv(input_file_pom)
+    gs_lf = prepare_dataset(gs_lf, x_att, y_att)
 
-    gs_lf_pom_np = np.asarray(gs_lf_pom[x_att].tolist())
-    gs_lf_pom_y = np.asarray(gs_lf_pom[y_att].tolist())
+    gs_lf_np = np.asarray(gs_lf[x_att].tolist())
+    gs_lf_y = np.asarray(gs_lf[y_att].tolist())
 
-    gs_lf_pom_proba_train = gs_lf_pom_np[indices_train]
-    gs_lf_pom_y_train = gs_lf_pom_y[indices_train]
+    gs_lf_proba_train = gs_lf_np[indices_train]
+    gs_lf_y_train = gs_lf_y[indices_train]
 
-    gs_lf_pom_proba_test = gs_lf_pom_np[indices_test]
-    gs_lf_pom_y_test = gs_lf_pom_y[indices_test]
+    gs_lf_proba_test = gs_lf_np[indices_test]
+    gs_lf_y_test = gs_lf_y[indices_test]
 
-    gs_lf_pom_proba_valid = gs_lf_pom_np[indices_valid]
-    gs_lf_pom_y_valid = gs_lf_pom_y[indices_valid]
+    gs_lf_proba_valid = gs_lf_np[indices_valid]
+    gs_lf_y_valid = gs_lf_y[indices_valid]
 
-    return gs_lf_pom, gs_lf_pom_np,gs_lf_pom_y,gs_lf_pom_proba_train,gs_lf_pom_y_train,gs_lf_pom_proba_valid,gs_lf_pom_y_valid,gs_lf_pom_proba_test,gs_lf_pom_y_test
+
+
+
+
+    return gs_lf, gs_lf_np,gs_lf_y,gs_lf_proba_train,gs_lf_y_train,gs_lf_proba_valid,gs_lf_y_valid,gs_lf_proba_test,gs_lf_y_test
 
 def prepare_dataset(ds,x_att,y_att):
     ds[y_att] = ds[y_att].apply(ast.literal_eval)
@@ -682,7 +686,12 @@ def select_features(input_file):
     ds_alva= ds_alva.rename(columns={"cid":"CID"})
     # print("cc2", ds_alva.columns.values.tolist())
     ds_alva_selected = ds_alva[features]
+    # ds_alva_selected = ds_alva_selected.fillna(0)
+    #drop columns with all na values
+    ds_alva_selected = ds_alva_selected.dropna(axis=1, how='all')
     ds_alva_selected = ds_alva_selected.fillna(0)
+    print(ds_alva_selected.shape)
+
     ds_alva_selected['embeddings'] = ds_alva_selected[selected_features].values.tolist()
     return ds_alva_selected
 
