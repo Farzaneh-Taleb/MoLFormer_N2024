@@ -8,7 +8,7 @@ import scipy
 
 def pipeline_regression(X_train,y_train,X_test,regression_method,seed,n_components=None):
     # if len(X_train.shape) <2:
-
+    linreg = None
 
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
@@ -17,7 +17,15 @@ def pipeline_regression(X_train,y_train,X_test,regression_method,seed,n_componen
         pca = PCA(n_components=n_components)
         X_train=pca.fit_transform(X_train)
         X_test=pca.transform(X_test)
+
+        variance_explained = pca.explained_variance_ratio_
+        # var = 0
+        # for i in range(20):
+        #     var = var+variance_explained[i]
+        # print(f"Variance explained by {n_components} components: {var}")
+
     linreg =regression_method(X_train,y_train,seed)
+    # return var
     return linreg,X_test
 
 def custom_logistic_regression(X,y,seed):
