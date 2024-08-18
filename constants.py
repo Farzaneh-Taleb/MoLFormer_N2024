@@ -20,7 +20,7 @@ gs_lf_tasks = [
 'tea', 'terpenic', 'tobacco', 'tomato', 'tropical', 'vanilla', 'vegetable',
 'vetiver', 'violet', 'warm', 'waxy', 'weedy', 'winey', 'woody'
 ]
-
+# 'nonStereoSMILES___RDF035v', 'nonStereoSMILES___G1m', 'nonStereoSMILES___G1v', 'nonStereoSMILES___G1e', 'nonStereoSMILES___G3s', 'nonStereoSMILES___R8u+'
 
 chemical_features_r=["nCIR",
                      "ZM1",
@@ -36,12 +36,12 @@ chemical_features_r=["nCIR",
                      "SM10_AEA(dm)",
                      "SM13_AEA(dm)",
                       "SpMin3_Bh(v)",
-                     "RDF035v",
-                     "G1m",
-                     "G1v",
-                     "G1e",
-                     "G3s",
-                     "R8u+",
+                     # "RDF035v",
+                     # "G1m",
+                     # "G1v",
+                     # "G1e",
+                     # "G3s",
+                     # "R8u+",
                      "nRCOSR"]
 
 
