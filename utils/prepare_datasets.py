@@ -716,19 +716,9 @@ def prepare_goodscentleffignwell_mols(modeldeepchem_gslf,lm,tokenizer):
     goodscentleffignwell_input_file = '/local_storage/datasets/farzaneh/alignment_olfaction_datasets/curated_datasets/mols_datasets/curated_GS_LF_merged_4983.csv' # or new downloaded file path
     df_goodscentleffignwell=pd.read_csv(goodscentleffignwell_input_file)
     df_goodscentleffignwell.index.names = ['CID']
-    # return df
-    # df_goodscentleffignwell_mols_layers=[]
-    # df_goodscentleffignwell_mols_layers_zscored=[]
-    
-    # input_file = '/local_storage/datasets/farzaneh/openpom/data/curated_datasets/curated_GS_LF_merged_4983.csv' # or new downloaded file path
     df_goodscentleffignwell= df_goodscentleffignwell.reset_index()
-  
     df_goodscentleffignwell['y'] = df_goodscentleffignwell.loc[:,'alcoholic':'woody'].values.tolist()
-    
-#      #inference on molecules
-
     df_gslf_mols_embeddings_original,df_gslf_mols_layers_original,df_gslf_mols_embeddings,df_gslf_mols_embeddings_zscored,df_gslf_mols_layers,df_gslf_mols_layers_zscored=prepare_mols_helper(lm,tokenizer,df_goodscentleffignwell,modeldeepchem=modeldeepchem_gslf)
-#     df_snitz_mols_embeddings_original,df_snitz_mols_layers_original,df_snitz_mols_embeddings,df_snitz_mols_embeddings_zscored,df_snitz_mols_layers,df_snitz_mols_layers_zscored=prepare_mols_helper(df_snitz_mols)
     return df_goodscentleffignwell, df_gslf_mols_embeddings_original,df_gslf_mols_layers_original,df_gslf_mols_embeddings,df_gslf_mols_embeddings_zscored,df_gslf_mols_layers,df_gslf_mols_layers_zscored
 
 
