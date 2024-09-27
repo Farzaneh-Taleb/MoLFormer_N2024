@@ -53,7 +53,10 @@ def custom_ridge_regression(X, y, seed):
     # print(X.shape,"XXXx")
 
 
-    linreg = RidgeCV(alphas=[], random_state=seed, n_jobs=-1)
+    linreg = RidgeCV()
+
+    # print(X.shape, y.shape)
+
 
     estimator = linreg.fit(X, y)
     return estimator
