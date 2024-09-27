@@ -7,26 +7,24 @@ import scipy
 
 
 def pipeline_regression(X_train,y_train,X_test,regression_method,seed,n_components=None):
-    # if len(X_train.shape) <2:
-    linreg = None
 
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
+    var = 0
+
     if n_components is not None:
         pca = PCA(n_components=n_components)
         X_train=pca.fit_transform(X_train)
         X_test=pca.transform(X_test)
 
         variance_explained = pca.explained_variance_ratio_
-        # var = 0
-        # for i in range(20):
-        #     var = var+variance_explained[i]
-        # print(f"Variance explained by {n_components} components: {var}")
+        for i in range(20):
+            var = var+variance_explained[i]
 
     linreg =regression_method(X_train,y_train,seed)
     # return var
-    return linreg,X_test
+    return linreg,X_test,var
 
 def custom_logistic_regression(X,y,seed):
     clf = LogisticRegressionCV(cv=5, random_state=seed,max_iter=200,scoring='roc_auc')
@@ -48,19 +46,6 @@ def custom_linear_regression(X, y, seed):
         return None
     return estimator
 
-def custom_ridge_regression(X, y, seed):
-    # print(y.shape)
-    # print(X.shape,"XXXx")
-
-
-    linreg = RidgeCV()
-
-    # print(X.shape, y.shape)
-
-
-    estimator = linreg.fit(X, y)
-    return estimator
-
 
 def metrics_per_descritor(X, y, linreg):
     predicted = linreg.predict(X)
@@ -72,14 +57,11 @@ def metrics_per_descritor(X, y, linreg):
             correlation = scipy.stats.pearsonr(predicted[:, i], y[:, i])
             mseerrors.append(mseerror)
             correlations.append(correlation)
-            # print(predicted[:,i], y[:,i])
 
     else:
         mseerror = mean_squared_error(predicted, y)
         correlation = scipy.stats.pearsonr(predicted, y)
         mseerrors.append(mseerror)
         correlations.append(correlation)
-    # print(predicted[:,i], y[:,i])
 
     return predicted, mseerrors, correlations
-    # plot()
