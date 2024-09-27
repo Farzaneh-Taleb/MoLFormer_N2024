@@ -689,6 +689,20 @@ def grand_average(df, ds):
     df_embeddings = df_embeddings[['CID', 'embeddings']]
     df_groupbyCID = pd.merge(df_groupbyCID, df_embeddings, on='CID', how='left')
     return df_groupbyCID
+# def grand_average_pervoxel_percid(df, ds):
+#     if ds == "sagar":
+#         descriptors = sagar_descriptors
+#     elif ds == "sagar2":
+#         descriptors = sagar_descriptors2
+#
+#
+#     df_groupbyCID = df.groupby(['CID', '')[descriptors].mean().reset_index()
+#
+#     df_groupbyCID['y'] = df_groupbyCID.loc[:, descriptors[0]:descriptors[-1]].values.tolist()
+#     df_embeddings = df.drop_duplicates(subset=['CID'])
+#     df_embeddings = df_embeddings[['CID', 'embeddings']]
+#     df_groupbyCID = pd.merge(df_groupbyCID, df_embeddings, on='CID', how='left')
+#     return df_groupbyCID
 
 
 def average_over_subject(df, ds):
