@@ -1,6 +1,8 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+
+
 from IPython.core.display_functions import display
 from matplotlib.patches import Patch
 from scipy.stats import gaussian_kde
@@ -10,9 +12,10 @@ from sklearn import manifold
 # import umap
 sns.set_theme(style='white')
 
-def pom_frame(pom_embeds, y, dir, required_desc, title, size1, size2, size3,reduction_method = 'PCA',perplexity=None):
+def pom_frame(pom_embeds, y, required_desc, title, size1, size2, size3,reduction_method = 'PCA',perplexity=None):
     sns.set_style("ticks")
     sns.despine()
+    # sns.set_style("white")
 
     # pom_embeds = model.predict_embedding(dataset)
     # y_preds = model.predict(dataset)
@@ -163,36 +166,26 @@ def plot_lines(data, title, filename):
                 )
 
 
-def plot_bars(data, title, filename):
+def plot_bars(data, title, filename,y_ticks,yticklabels,ncol,grid=False):
+    plt.rcParams["font.size"] = 25
     df_corrs = pd.DataFrame.from_dict(data, orient='index',
                                       columns=['Dataset', 'type', 'Correlation'])
-    sns.set_style("white")
-    fig, ax = plt.subplots(figsize=(8, 8)
-                           # ,constrained_layout = True
-                           )
-    # sns.set_style("whitegrid")
-    # sns.color_palette("tab10")
+    fig, ax = plt.subplots(figsize=(8, 8) )
     sns.color_palette("hls", 4)
-    # palette = ["#91bfdb",
-    #            "#003f5c",
-    #            # "#d73027",
-    #            # "#fc8d59",
-    #            # "#ffda33",
-    #
-    #            # , "#4575b4"
-    #            ]
 
     palette = ['#4d79a4', '#ecc947', '#b07aa0', '#3b5f80','#b39e38','#8a5e80']
 
-    # plt.subplots_adjust(bottom=0.3)
+    if grid:
+        sns.set_style("whitegrid")
+    else:
+        sns.set_style("white")
     g = sns.barplot(df_corrs, x="Dataset", y="Correlation", hue="type", width=0.4, palette=palette)
-    # for i in ax.containers:
-    #     ax.bar_label(i,fmt="%2.2f")
+
     ax.legend().set_title(title)
     handles, labels = ax.get_legend_handles_labels()
     ax.get_legend().remove()
     fig.subplots_adjust(bottom=0.35, left=0.2)
-    fig.legend(handles, labels, ncol=2, columnspacing=0.8, prop={'size': 25}, handlelength=1.5, loc="lower center",
+    fig.legend(handles, labels, ncol=ncol, columnspacing=0.8, prop={'size': 25}, handlelength=1.5, loc="lower center",
                borderpad=0.4,
 
                bbox_to_anchor=(0.54, 0.07),
@@ -201,42 +194,28 @@ def plot_bars(data, title, filename):
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
-    # g.set_yticks([0.45,0.5,0.55,0.6,0.65,0.7]) # <--- set the ticks first
-    # g.set_yticklabels(['', '','', '','', ''])
 
-    ax.set_ylabel('Correlation Coefficient')
+    ax.set_ylabel('Correlation Coefficient', fontsize=25)
+    ax.set_xlabel('Dataset', fontsize=25)
 
-    # plt.margins(x=0.5)
-    # fig.update_layout(bargap=0.1)
-    # ax.set_subtitle("Dataset")  # Set title with numeric distance
-    # axes[0].set_title("Total Bill Distribution", loc=(0.05, 0.9))  # Set title with numeric distance
-
-    # ax.set_title('')
     ax.xaxis.set_label_coords(0.5, -0.18)
-    # plt.tight_layout()
-    #     g.set_yticks([0.45,0.5,0.55,0.6,0.65,0.7]) # <--- set the ticks first
-
-    #     g.set_yticklabels(['', '0.5','', '0.6','', '0.7'])
-    #     g.set_ylim(0.45,0.7)
-
+    g.set_yticks(y_ticks)
+    g.set_yticklabels(yticklabels)
     plt.savefig(filename,
                 bbox_inches="tight"
                 )
-
     def change_width(ax, new_value):
         for patch in ax.patches:
             current_width = patch.get_width()
             diff = current_width - new_value
-
-            # we change the bar width
             patch.set_width(new_value)
-
-            # we recenter the bar
             patch.set_x(patch.get_x() + diff * .5)
 
-def combine_visualize(dfs, tasks, ax, title, abs=False, figure_name="def",width=None):
-    plt.rcParams["font.size"] = 40
+def combine_visualize(dfs, tasks, ax, title, abs=False, figure_name="def",width=None,linewidth=7,yticks=None,fontsize=45):
+    plt.rcParams["font.size"] = 45
     df_combined = pd.concat(dfs)
+    df_combined = df_combined.iloc[:, df_combined.columns != 'type']
+    df_combined = df_combined.iloc[:, df_combined.columns != 'voxel']
     # for df in dfs:
     #     df_combined = pd.concat((df,df_combined))
     #
@@ -258,7 +237,9 @@ def combine_visualize(dfs, tasks, ax, title, abs=False, figure_name="def",width=
     g1 = sns.barplot(
         data=melted_df_keller,
         x="descritpor", y="value", hue="model",
-        errorbar="se", ax=ax, palette=['#4d79a4', '#ecc947', '#b07aa0','#103961'], width=width*4)
+        # errorbar="se", ax=ax, palette=['#4d79a4', '#ecc947', '#b07aa0','#103961'],linewidth=m)
+        errorbar="se", ax=ax, palette=['#4d79a4', '#ecc947', '#b07aa0','#103961'],linewidth=linewidth)
+
 
     if width is not None:
         for patch in g1.patches:
@@ -275,47 +256,50 @@ def combine_visualize(dfs, tasks, ax, title, abs=False, figure_name="def",width=
     # g2.despine(left=True)
     # g2.set_axis_labels("", "Body mass (g)")
     # g2.legend.set_title("")
-    g1.set_xticklabels(tasks, rotation=90,size=40)
-    g1.set_xlabel('Descriptor', fontsize=40)
-    g1.set_ylabel(title, fontsize=40)
+    g1.set_xticklabels(tasks, rotation=90,size=fontsize)
+    g1.set_yticks(yticks)
+    g1.set_yticklabels([str(i) for i in yticks],size=fontsize)
+
+    g1.set_xlabel('Descriptor', fontsize=fontsize)
+    g1.set_ylabel(title, fontsize=fontsize)
 
     # change_width(g1, 0.1)
     # g1.figure.savefig(figure_name+".pdf")
     return g1
 
-def combine_visualize_separate(df1, df2, df3, tasks, ax, title, type="corr", figure_name="def"):
-    df12 = pd.concat((df1, df2))
-    df_combined = pd.concat((df12, df3))
-    melted_df_keller = df_combined.melt(id_vars=['model'], var_name='descritpor')
-    # g1 = sns.catplot(
-    # data=melted_df_keller, kind="bar",
-    # x="descritpor", y="value", hue="model",
-    # errorbar="sd", palette="dark", alpha=.6, height=6,aspect =2 )
-    # g1.despine(left=True)
-    # g1.set_axis_labels("", "Body mass (g)")
-    # g1.legend.set_title("")
-    # g1.set_xticklabels(tasks, rotation=45)
-    if type == "corr":
-        melted_df_keller['value'] = melted_df_keller['value'].abs()
-    else:
-        pass
-        # melted_df_keller['value'] = melted_df_keller[['value']].apply(np.sqrt)
-    print(melted_df_keller.groupby('model')['value'].mean().reset_index())
-    print(melted_df_keller.groupby('model')['value'].sem().reset_index() * 2)
-    g2 = sns.barplot(
-        data=melted_df_keller,
-        x="model", y="value",
-        errorbar="se", palette="dark", alpha=.6, ax=ax)
-    # g2.set_axis_labels("", title)
-    g2.set(xlabel='Model', ylabel=title)
-    # g2.despine(left=True)
-    # g2.set_axis_labels("", "Body mass (g)")
-    # g2.legend.set_title("")
-    # g.set_xticklabels(tasks, rotation=45)
-    # g2.figure.savefig(figure_name+".pdf")
-def post_process_dataframe(corrss, msess,corrss_finetuned, msess_finetuned, df_cor_pom, df_cor_alva, df_mse_pom, df_mse_alva, tasks,
-                           figure_name="def",width=None):
-    plt.rcParams["font.size"] = 40
+# def combine_visualize_separate(df1, df2, df3, tasks, ax, title, type="corr", figure_name="def"):
+#     df12 = pd.concat((df1, df2))
+#     df_combined = pd.concat((df12, df3))
+#     melted_df_keller = df_combined.melt(id_vars=['model'], var_name='descritpor')
+#     # g1 = sns.catplot(
+#     # data=melted_df_keller, kind="bar",
+#     # x="descritpor", y="value", hue="model",
+#     # errorbar="sd", palette="dark", alpha=.6, height=6,aspect =2 )
+#     # g1.despine(left=True)
+#     # g1.set_axis_labels("", "Body mass (g)")
+#     # g1.legend.set_title("")
+#     # g1.set_xticklabels(tasks, rotation=45)
+#     if type == "corr":
+#         melted_df_keller['value'] = melted_df_keller['value'].abs()
+#     else:
+#         pass
+#         # melted_df_keller['value'] = melted_df_keller[['value']].apply(np.sqrt)
+#     print(melted_df_keller.groupby('model')['value'].mean().reset_index())
+#     print(melted_df_keller.groupby('model')['value'].sem().reset_index() * 2)
+#     g2 = sns.barplot(
+#         data=melted_df_keller,
+#         x="model", y="value",
+#         errorbar="se", palette="dark", alpha=.6, ax=ax)
+#     # g2.set_axis_labels("", title)
+#     g2.set(xlabel='Model', ylabel=title)
+#     # g2.despine(left=True)
+#     # g2.set_axis_labels("", "Body mass (g)")
+#     # g2.legend.set_title("")
+#     # g.set_xticklabels(tasks, rotation=45)
+#     # g2.figure.savefig(figure_name+".pdf")
+def post_process_dataframe(corrss, msess,corrss_finetuned, msess_finetuned, df_cor_pom,df_mse_pom, df_cor_alva, df_mse_alva, tasks,
+                           figure_name="def",width=None,linewidth=3,fontsize=45):
+    plt.rcParams["font.size"] = 45
 
     # plt.rcParams['xtick.labelsize'] = 14
 
@@ -345,23 +329,33 @@ def post_process_dataframe(corrss, msess,corrss_finetuned, msess_finetuned, df_c
     # data=melted_corrss_filtered_decreasing, x="layer", y="value", hue="descritpor", err_style='bars',ax=ax[1]
     # )
     # f1, ax_agg = plt.subplots(1, 2,figsize=(20, 5))
-    f2, ax = plt.subplots(2, 1, figsize=(25, 22))
+    f2, ax = plt.subplots(2, 1, figsize=(22, 22))
+
+    corrss=corrss.loc[(corrss["layer"] == 12) |(corrss["layer"] == 13)].iloc[:, corrss.columns != 'layer']
+
+    msess=msess.loc[(msess["layer"] == 12) | (msess["layer"] == 13)].iloc[:, msess.columns != 'layer']
+
+    if corrss_finetuned is not None:
+        corrss_finetuned = corrss_finetuned.loc[
+                               (corrss_finetuned["layer"] == 12) | (corrss_finetuned["layer"] == 13)].iloc[:,
+                           corrss_finetuned.columns != 'layer']
+    if msess_finetuned is not None:
+        msess_finetuned = msess_finetuned.loc[(msess_finetuned["layer"] == 12) | (msess_finetuned["layer"] == 13)].iloc[
+                          :, msess_finetuned.columns != 'layer']
 
 
-    # combine_visualize_separate(corrss.loc[corrss["layer"]==12,].iloc[:,corrss.columns != 'layer'], df_cor_pom,df_cor_alva,tasks,ax_agg[0],'Correlation Coefficient',figure_name="Correlation_Avg_"+figure_name)
-    g1 = combine_visualize((corrss.loc[corrss["layer"] == 12].iloc[:, corrss.columns != 'layer'],corrss_finetuned.loc[corrss_finetuned["layer"] == 12].iloc[:, corrss_finetuned.columns != 'layer'], df_cor_pom,
-                           df_cor_alva), tasks, ax[0], 'Correlation Coefficient',
-                           figure_name="Correlation_" + figure_name,abs=True,width=width)
+    g1 = combine_visualize((corrss,corrss_finetuned, df_cor_pom,df_cor_alva), tasks, ax[0], 'Correlation Coefficient',
+                           figure_name="Correlation_" + figure_name,abs=True,width=width,linewidth=linewidth,yticks=[0,0.1,0.2,0.3,0.4],fontsize=fontsize)
 
     # combine_visualize_separate(msess.loc[msess["layer"]==12].iloc[:,msess.columns != 'layer'], df_mse_pom,df_mse_alva,tasks,ax_agg[1],'MSE',type="mse",figure_name="MSE_Avg_"+figure_name)
-    g2 = combine_visualize((msess.loc[msess["layer"] == 12].iloc[:, msess.columns != 'layer'], msess_finetuned.loc[msess_finetuned["layer"] == 12].iloc[:, msess_finetuned.columns != 'layer'], df_mse_pom,
-                           df_mse_alva), tasks, ax[1], 'NRMSE', figure_name="MSE__" + figure_name,width=width)
-    vertical_plot_tweak(f2, figure_name, g1, g2)
+    g2 = combine_visualize((msess, msess_finetuned, df_mse_pom,
+                           df_mse_alva), tasks, ax[1], 'NRMSE', figure_name="MSE__" + figure_name,width=width,linewidth=linewidth,yticks=[0,0.05,0.1,0.15,0.2],fontsize=fontsize)
+    vertical_plot_tweak(f2, figure_name, g1, g2,fontsize)
 
     # return melted_corrss_filtered
 
 
-def vertical_plot_tweak(f2, figure_name, g1, g2):
+def vertical_plot_tweak(f2, figure_name, g1, g2,fontsize):
     g1.set_xlabel('')
     g2.set_xlabel('Descriptor')
     g1.legend().set_title("Model")
@@ -375,9 +369,10 @@ def vertical_plot_tweak(f2, figure_name, g1, g2):
     labels = ['MoLFormer', 'Open-POM', 'DAM','Fine-tuned MoLFormer']
     plt.rcParams["font.size"] = 40
 
-    f2.legend(handles, labels, ncol=4, columnspacing=1, prop={'size': 40}, handlelength=1.5, loc="lower center",
+    f2.legend(handles, labels, ncol=4, columnspacing=1, prop={'size': fontsize}, handlelength=1.5, loc="lower center",
               borderpad=0.3,
-              bbox_to_anchor=(0.52, -0.07),
+              bbox_to_anchor=(0.52, -0.09),
+
               frameon=True, labelspacing=0.4, handletextpad=0.2, )
     # plt.legend(title='Smoker', loc='upper left',)
     plt.subplots_adjust(hspace=0.6)

@@ -137,8 +137,9 @@ def correlation_helper_mixture(df_all,df_mols_all,value_type="r"):
         last=pearsonr(data_flattered["Peceptual Similarity"], data_flattered["Model Similarity"])
     if value_type=="R2":
         return last
-    else:    
-        return last.statistic,last.pvalue
+    else:
+        print("change",abs(last.statistic))
+        return abs(last.statistic),last.pvalue
 
 
 def flattening_data_helper(out_original,out_mols,equalize_size=True):

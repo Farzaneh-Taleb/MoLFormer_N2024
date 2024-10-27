@@ -228,49 +228,49 @@ def prepare_keller():
     return df_keller, df_keller_mean, df_keller_zscored, df_keller_zscored_mean, df_keller_zscored_pca,df_keller_zscored_mean_pca,df_keller_zscored_pca_mean
 
 
-def prepare_keller_mols(modeldeepchem_gslf,lm,tokenizer):
-    df_keller_mols = df_keller.drop_duplicates('CID')
-    print(df_keller_mols.columns)
-    df_keller_mols_embeddings_original,df_keller_mols_layers_original,df_keller_mols_embeddings,df_keller_mols_embeddings_zscored,df_keller_mols_layers,df_keller_mols_layers_zscored,df_keller_mols_embeddings_linear,df_keller_mols_embeddings_linear_zscored=prepare_mols_helper(lm,tokenizer,df_keller_mols,mol_type="nonStereoSMILES",modeldeepchem=modeldeepchem_gslf)
-    return df_keller_mols,df_keller_mols_embeddings_original,df_keller_mols_layers_original,df_keller_mols_embeddings,df_keller_mols_embeddings_zscored,df_keller_mols_layers,df_keller_mols_layers_zscored,df_keller_mols_embeddings_linear,df_keller_mols_embeddings_linear_zscored
+# def prepare_keller_mols(modeldeepchem_gslf,lm,tokenizer):
+#     df_keller_mols = df_keller.drop_duplicates('CID')
+#     print(df_keller_mols.columns)
+#     df_keller_mols_embeddings_original,df_keller_mols_layers_original,df_keller_mols_embeddings,df_keller_mols_embeddings_zscored,df_keller_mols_layers,df_keller_mols_layers_zscored,df_keller_mols_embeddings_linear,df_keller_mols_embeddings_linear_zscored=prepare_mols_helper(lm,tokenizer,df_keller_mols,mol_type="nonStereoSMILES",modeldeepchem=modeldeepchem_gslf)
+#     return df_keller_mols,df_keller_mols_embeddings_original,df_keller_mols_layers_original,df_keller_mols_embeddings,df_keller_mols_embeddings_zscored,df_keller_mols_layers,df_keller_mols_layers_zscored,df_keller_mols_embeddings_linear,df_keller_mols_embeddings_linear_zscored
 
     
     
-def prepare_ravia_backup():
-    # input_file = '/local_storage/datasets/farzaneh/openpom/data/curated_datasets/curated_ravia2020_behavior_similairity.csv'
-#     pd.read_csv('/local_storage/datasets/farzaneh/openpom/data/curated_datasets/curated_ravia2020_alvaa.csv')
-    input_file = '/local_storage/datasets/farzaneh/alignment_olfaction_datasets/curated_datasets/alva/ravia_molecules_alva_17Apr.csv'
-    df_ravia_original=pd.read_csv(input_file)
-    df_ravia=df_ravia_original.copy()
-    print(df_ravia.columns)
-    # 'Stimulus 1-IsomericSMILES', 'Stimulus 2-IsomericSMILES',
-       # 'Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES'
+# def prepare_ravia_backup():
+#     # input_file = '/local_storage/datasets/farzaneh/openpom/data/curated_datasets/curated_ravia2020_behavior_similairity.csv'
+# #     pd.read_csv('/local_storage/datasets/farzaneh/openpom/data/curated_datasets/curated_ravia2020_alvaa.csv')
+#     input_file = '/local_storage/datasets/farzaneh/alignment_olfaction_datasets/curated_datasets/alva/ravia_molecules_alva_17Apr.csv'
+#     df_ravia_original=pd.read_csv(input_file)
+#     df_ravia=df_ravia_original.copy()
+#     print(df_ravia.columns)
+#     # 'Stimulus 1-IsomericSMILES', 'Stimulus 2-IsomericSMILES',
+#        # 'Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES'
+#
+#     features= ['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES', 'RatedSimilarity']
+#     agg_functions={}
     
-    features= ['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES', 'RatedSimilarity']
-    agg_functions={}
     
-    
-    chemical_features_r=["nCIR",
-                         "ZM1",
-                         "GNar",
-                         "S1K",
-                         "piPC08",
-                         "MATS1v",
-                         "MATS7v",
-                         "GATS1v",
-                         "Eig05_AEA(bo)",
-                         "SM02_AEA(bo)",
-                         "SM03_AEA(dm)",
-                         "SM10_AEA(dm)",
-                         "SM13_AEA(dm)",
-                          "SpMin3_Bh(v)",
-                         "RDF035v",
-                         "G1m",
-                         "G1v",
-                         "G1e",
-                         "G3s",
-                         "R8u+",
-                         "nRCOSR"]
+    # chemical_features_r=["nCIR",
+    #                      "ZM1",
+    #                      "GNar",
+    #                      "S1K",
+    #                      "piPC08",
+    #                      "MATS1v",
+    #                      "MATS7v",
+    #                      "GATS1v",
+    #                      "Eig05_AEA(bo)",
+    #                      "SM02_AEA(bo)",
+    #                      "SM03_AEA(dm)",
+    #                      "SM10_AEA(dm)",
+    #                      "SM13_AEA(dm)",
+    #                       "SpMin3_Bh(v)",
+    #                      "RDF035v",
+    #                      "G1m",
+    #                      "G1v",
+    #                      "G1e",
+    #                      "G3s",
+    #                      "R8u+",
+    #                      "nRCOSR"]
 
     
     nonStereoSMILE1 = list(map(lambda x: "Stimulus 1-nonStereoSMILES___" + x, chemical_features_r))
@@ -418,50 +418,50 @@ def prepare_dataset(ds,x_att,y_att):
     ds[x_att] = ds[x_att].apply(ast.literal_eval)
     return ds
 
-def prepare_ravia_sep():
-
-    input_file = '/local_storage/datasets/farzaneh/alignment_olfaction_datasets/curated_datasets/mols_datasets/curated_ravia2020_behavior_similairity.csv'
-    df_ravia_original=pd.read_csv(input_file)
-    df_ravia=df_ravia_original.copy()
-    print(df_ravia.columns)
-    # 'Stimulus 1-IsomericSMILES', 'Stimulus 2-IsomericSMILES',
-       # 'Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES'
-    
-    features= ['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES_sep','Stimulus 2-IsomericSMILES_sep','Stimulus 1-nonStereoSMILES_sep', 'Stimulus 2-nonStereoSMILES_sep', 'RatedSimilarity']
-    agg_functions={}
-    
-    features_all = features
-    df_ravia=df_ravia.reindex(columns=features_all)
-        
-    agg_functions['RatedSimilarity'] = 'mean'
-    # print(agg_functions,"agg_functions")
-    # print(features_all)
-    
-    
-    df_ravia = df_ravia[ features_all]
-    df_ravia_copy = df_ravia.copy()
-    df_ravia_copy = df_ravia_copy.rename(columns={'Stimulus 1-IsomericSMILES_sep': 'Stimulus 2-IsomericSMILES_sep', 'Stimulus 2-IsomericSMILES_sep': 'Stimulus 1-IsomericSMILES_sep', 'CID Stimulus 1': 'CID Stimulus 2', 'CID Stimulus 2': 'CID Stimulus 1','Stimulus 1-nonStereoSMILES_sep': 'Stimulus 2-nonStereoSMILES_sep', 'Stimulus 2-nonStereoSMILES_sep': 'Stimulus 1-nonStereoSMILES_sep'})
-    df_ravia_copy['RatedSimilarity']=np.nan
-    df_ravia_concatenated= pd.concat([df_ravia, df_ravia_copy], ignore_index=True, axis=0).reset_index(drop=True)
-    df_ravia=df_ravia_concatenated.drop_duplicates(['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES_sep','Stimulus 2-IsomericSMILES_sep','Stimulus 1-nonStereoSMILES_sep', 'Stimulus 2-nonStereoSMILES_sep'])
-
-    
-    # df_ravia_mean =df_ravia.groupby(['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES']).mean().reset_index()
-    # df_ravia_mean=df_ravia_mean.drop(columns=['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES'])
-    
-    
-    df_ravia_mean =df_ravia.groupby(['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES_sep','Stimulus 2-IsomericSMILES_sep','Stimulus 1-nonStereoSMILES_sep', 'Stimulus 2-nonStereoSMILES_sep']).agg(agg_functions).reset_index()
-    # df_ravia_mean=df_ravia_mean.drop(columns=['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES'])
-    
-    # result_df = df_ravia.groupby('category').agg(agg_functions)
-    
-    df_ravia_mean_pivoted = df_ravia_mean.pivot(index='CID Stimulus 1', columns='CID Stimulus 2', values='RatedSimilarity')
-    # df_ravia_mean_pivoted.head(5)
-    df_ravia_mean_pivoted = df_ravia_mean_pivoted.reindex(sorted(df_ravia_mean_pivoted.columns), axis=1)
-    df_ravia_mean_pivoted=df_ravia_mean_pivoted.sort_index(ascending=True)
-    
-    
-    return  df_ravia_original,df_ravia_mean,df_ravia_mean_pivoted
+# def prepare_ravia_sep():
+#
+#     input_file = '/local_storage/datasets/farzaneh/alignment_olfaction_datasets/curated_datasets/mols_datasets/curated_ravia2020_behavior_similairity.csv'
+#     df_ravia_original=pd.read_csv(input_file)
+#     df_ravia=df_ravia_original.copy()
+#     print(df_ravia.columns)
+#     # 'Stimulus 1-IsomericSMILES', 'Stimulus 2-IsomericSMILES',
+#        # 'Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES'
+#
+#     features= ['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES_sep','Stimulus 2-IsomericSMILES_sep','Stimulus 1-nonStereoSMILES_sep', 'Stimulus 2-nonStereoSMILES_sep', 'RatedSimilarity']
+#     agg_functions={}
+#
+#     features_all = features
+#     df_ravia=df_ravia.reindex(columns=features_all)
+#
+#     agg_functions['RatedSimilarity'] = 'mean'
+#     # print(agg_functions,"agg_functions")
+#     # print(features_all)
+#
+#
+#     df_ravia = df_ravia[ features_all]
+#     df_ravia_copy = df_ravia.copy()
+#     df_ravia_copy = df_ravia_copy.rename(columns={'Stimulus 1-IsomericSMILES_sep': 'Stimulus 2-IsomericSMILES_sep', 'Stimulus 2-IsomericSMILES_sep': 'Stimulus 1-IsomericSMILES_sep', 'CID Stimulus 1': 'CID Stimulus 2', 'CID Stimulus 2': 'CID Stimulus 1','Stimulus 1-nonStereoSMILES_sep': 'Stimulus 2-nonStereoSMILES_sep', 'Stimulus 2-nonStereoSMILES_sep': 'Stimulus 1-nonStereoSMILES_sep'})
+#     df_ravia_copy['RatedSimilarity']=np.nan
+#     df_ravia_concatenated= pd.concat([df_ravia, df_ravia_copy], ignore_index=True, axis=0).reset_index(drop=True)
+#     df_ravia=df_ravia_concatenated.drop_duplicates(['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES_sep','Stimulus 2-IsomericSMILES_sep','Stimulus 1-nonStereoSMILES_sep', 'Stimulus 2-nonStereoSMILES_sep'])
+#
+#
+#     # df_ravia_mean =df_ravia.groupby(['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES']).mean().reset_index()
+#     # df_ravia_mean=df_ravia_mean.drop(columns=['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES'])
+#
+#
+#     df_ravia_mean =df_ravia.groupby(['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES_sep','Stimulus 2-IsomericSMILES_sep','Stimulus 1-nonStereoSMILES_sep', 'Stimulus 2-nonStereoSMILES_sep']).agg(agg_functions).reset_index()
+#     # df_ravia_mean=df_ravia_mean.drop(columns=['CID Stimulus 1','CID Stimulus 2','Stimulus 1-IsomericSMILES','Stimulus 2-IsomericSMILES','Stimulus 1-nonStereoSMILES', 'Stimulus 2-nonStereoSMILES'])
+#
+#     # result_df = df_ravia.groupby('category').agg(agg_functions)
+#
+#     df_ravia_mean_pivoted = df_ravia_mean.pivot(index='CID Stimulus 1', columns='CID Stimulus 2', values='RatedSimilarity')
+#     # df_ravia_mean_pivoted.head(5)
+#     df_ravia_mean_pivoted = df_ravia_mean_pivoted.reindex(sorted(df_ravia_mean_pivoted.columns), axis=1)
+#     df_ravia_mean_pivoted=df_ravia_mean_pivoted.sort_index(ascending=True)
+#
+#
+#     return  df_ravia_original,df_ravia_mean,df_ravia_mean_pivoted
 
 def prepare_ravia_similarity_mols_mix_on_smiles(df_ravia_similarity_mean, lm, tokenizer, modeldeepchem_gslf=None):
     # df_ravia_mean_mols1 = df_ravia_similarity_mean[['Stimulus 1-IsomericSMILES','Stimulus 1-nonStereoSMILES','CID Stimulus 1']].drop_duplicates().reset_index(drop=True)
@@ -486,6 +486,9 @@ def sum_embeddings(cid_list, df_embeddings):
 
 
 def average_embeddings(cid_list, df_embeddings):
+    print(cid_list)
+    print(df_embeddings['CID'].values)
+
     embedding_sum = np.zeros(len(df_embeddings.iloc[0]['embeddings']))
     n_cid = 0
     for cid in cid_list:
@@ -646,13 +649,13 @@ def prepare_sagar():
     return df_sagar, df_sagar_mean, df_sagar_zscored, df_sagar_zscored_mean, df_sagar_common,df_sagar_common_mean, df_sagar_common_zscored,df_sagar_common_zscored_mean
 
 
-def prepare_sagar_mols(modeldeepchem_gslf,lm,tokenizer):
-    # df_sagar=df_sagar.rename(columns={"cid":"CID"})
-    df_sagar_mols = df_sagar.drop_duplicates("CID")
-    print(df_sagar_mols.columns)
-    df_sagar_mols_embeddings_original,df_sagar_mols_layers_original,df_sagar_mols_embeddings,df_sagar_mols_embeddings_zscored,df_sagar_mols_layers,df_sagar_mols_layers_zscored,df_sagar_mols_embeddings_linear,df_sagar_mols_embeddings_linear_zscored=prepare_mols_helper(lm,tokenizer,df_sagar_mols,mol_type="nonStereoSMILES",modeldeepchem=modeldeepchem_gslf)
-    return df_sagar_mols,df_sagar_mols_embeddings_original,df_sagar_mols_layers_original,df_sagar_mols_embeddings,df_sagar_mols_embeddings_zscored,df_sagar_mols_layers,df_sagar_mols_layers_zscored,df_sagar_mols_embeddings_linear,df_sagar_mols_embeddings_linear_zscored
-
+# def prepare_sagar_mols(modeldeepchem_gslf,lm,tokenizer):
+#     # df_sagar=df_sagar.rename(columns={"cid":"CID"})
+#     df_sagar_mols = df_sagar.drop_duplicates("CID")
+#     print(df_sagar_mols.columns)
+#     df_sagar_mols_embeddings_original,df_sagar_mols_layers_original,df_sagar_mols_embeddings,df_sagar_mols_embeddings_zscored,df_sagar_mols_layers,df_sagar_mols_layers_zscored,df_sagar_mols_embeddings_linear,df_sagar_mols_embeddings_linear_zscored=prepare_mols_helper(lm,tokenizer,df_sagar_mols,mol_type="nonStereoSMILES",modeldeepchem=modeldeepchem_gslf)
+#     return df_sagar_mols,df_sagar_mols_embeddings_original,df_sagar_mols_layers_original,df_sagar_mols_embeddings,df_sagar_mols_embeddings_zscored,df_sagar_mols_layers,df_sagar_mols_layers_zscored,df_sagar_mols_embeddings_linear,df_sagar_mols_embeddings_linear_zscored
+#
 
 
 
@@ -682,9 +685,7 @@ def select_features(input_file):
     # IsomericSMILES = list(map(lambda x: "IsomericSMILES___" + x, chemical_features_r))
     selected_features = nonStereoSMILE
     features= ['CID','nonStereoSMILES']+selected_features
-    # print("cc1", ds_alva.columns.values.tolist())
     ds_alva= ds_alva.rename(columns={"cid":"CID"})
-    # print("cc2", ds_alva.columns.values.tolist())
     ds_alva_selected = ds_alva[features]
     # ds_alva_selected = ds_alva_selected.fillna(0)
     #drop columns with all na values
